@@ -111,7 +111,7 @@ class iotawatt extends eqLogic
                         foreach (eqLogic::byType('iotawatt', true) as $iotawatt) {
                             if (count($iotawatt->getCmd('info')) == 0) {
                                 $iotawatt->setStatus('lastValueUpdate', 0);
-                                return;
+                                //return;
                             }
                             $iotawatt->getSeries();
                             $iotawatt->getSensors();
@@ -138,7 +138,7 @@ class iotawatt extends eqLogic
                     try {
                         foreach (eqLogic::byType('iotawatt', true) as $iotawatt) {
                             $iotawatt->getSeries();
-                            $this->updateStatus($this->getIotaWattStatus(array('passwords' => true, 'stats' => true, 'wifi' => true, 'inputs' => true, 'outputs' => true, 'device' => true, 'stats' => true)));
+                            $this->updateStatus($this->getIotaWattStatus(array('passwords' => true, 'stats' => true, 'wifi' => true, 'inputs' => true, 'outputs' => true, 'device' => true, 'stats' => true)))->save();
                         }
                     } catch (Exception $exc) {
                         log::add('iotawatt', 'error', __('Erreur : ', __FILE__) . $exc->getMessage());
@@ -171,29 +171,25 @@ class iotawatt extends eqLogic
     public function preUpdate()
     {
         $this->getSeries();
-        //$this->getSensors();
-        //$this->updateStatus($this->getIotaWattStatus(array('passwords' => true, 'stats' => true, 'wifi' => true, 'inputs' => true, 'outputs' => true)));
-    }
-
-    public function postUpdate()
-    {
         $this->updateStatus($this->getIotaWattStatus(array('passwords' => true, 'stats' => true, 'wifi' => true, 'inputs' => true, 'outputs' => true, 'device' => true, 'stats' => true)));
         $rebootCmd = $this->getCmd('action', 'reboot');
         if (!is_object($rebootCmd)) {
             $rebootCmd = new iotawattCmd();
             $rebootCmd->setName(__('Redémarrer', __FILE__));
             $rebootCmd->setLogicalId('reboot');
+            $rebootCmd->setOrder(9998);
             $rebootCmd->setEqLogic_id($this->getId());
             $rebootCmd->setType('action');
             $rebootCmd->setSubType('other');
             $rebootCmd->save();
         }
-      
+
         $refreshCmd = $this->getCmd('action', 'refresh');
         if (!is_object($refreshCmd)) {
             $refreshCmd = new iotawattCmd();
             $refreshCmd->setName(__('Rafraîchir', __FILE__));
             $refreshCmd->setLogicalId('refresh');
+            $refreshCmd->setOrder(9999);
             $refreshCmd->setEqLogic_id($this->getId());
             $refreshCmd->setType('action');
             $refreshCmd->setSubType('other');
@@ -225,12 +221,14 @@ class iotawatt extends eqLogic
     {
         if (!is_array($_status))  return false;
         if (isset($_status['device'])) {
+            log::add(__CLASS__, 'debug', __FUNCTION__ . ' ' . __('début', __FILE__) . ' device=' . json_encode($_status['device']));
             //{"device":{"name":"IotaWatt","timediff":60,"allowdst":false,"update":"ALPHA"}}
             $this->setConfiguration('name', $_status['device']['name']);
             $this->setConfiguration('timediff', $_status['device']['timediff']);
             $this->setConfiguration('update', $_status['device']['update']);
         }
         if (isset($_status['stats'])) {
+            log::add(__CLASS__, 'debug', __FUNCTION__ . ' ' . __('début', __FILE__) . ' stats=' . json_encode($_status['stats']));
             //{"stats":{"cyclerate":771.7698,"chanrate":33.36037,"starttime":1677953821,"currenttime":1678092109,"runseconds":138288,"stack":25048,"version":"02_08_02","frequency":50.0487,"lowbat":false}}
             $this->setConfiguration('lastUpdateTime', date('Y-m-d H:i:s', $_status['stats']['currenttime']));
             $this->setConfiguration('startTime', date('Y-m-d H:i:s', $_status['stats']['starttime']));
@@ -239,6 +237,7 @@ class iotawatt extends eqLogic
             $this->setStatus('lowbat', $_status['stats']['lowbat']);
         }
         if (isset($_status['wifi'])) {
+            log::add(__CLASS__, 'debug', __FUNCTION__ . ' ' . __('début', __FILE__) . ' wifi=' . json_encode($_status['wifi']));
             //{"wifi": { "connecttime": 3, "SSID": "Livebox-3756", "IP": "192.168.0.91", "channel": 6, "RSSI": -44, "mac": "3C:61:05:FA:C6:F7" }}
             $this->setConfiguration('mac', $_status['wifi']['mac']);
             $this->setConfiguration('SSID', $_status['wifi']['SSID']);
@@ -246,6 +245,7 @@ class iotawatt extends eqLogic
             $this->setStatus('connecttime', $_status['wifi']['connecttime']);
         }
         if (isset($_status['passwords'])) {
+            log::add(__CLASS__, 'debug', __FUNCTION__ . ' ' . __('début', __FILE__) . ' passwords=' . json_encode($_status['passwords']));
             //{"passwords": { "admin": false, "user": false, "localAccess": false}}
             $this->setConfiguration('admin', $_status['passwords']['admin']);
             $this->setConfiguration('user', $_status['passwords']['user']);
@@ -270,20 +270,23 @@ class iotawatt extends eqLogic
             //{"pvoutput":{"state":"not running"}}
         }
         if (isset($_status['inputs'])) {
+            log::add(__CLASS__, 'debug', __FUNCTION__ . ' ' . __('début', __FILE__) . ' inputs=' . json_encode($_status['inputs']));
             //{"inputs":[{"channel":0,"Vrms":239.4988,"Hz":50.04351,"phase":2.53},{"channel":1,"Watts":" 6","Pf":0.44705,"reversed":true,"phase":3.8,"lastphase":1.27},{"channel":2,"Watts":"58","Pf":0.557318,"reversed":true,"phase":3.8,"lastphase":1.27},{"channel":3,"Watts":" 0","Pf":0,"phase":3.8,"lastphase":1.27},{"channel":4,"Watts":" 0","Pf":0,"phase":3.8,"lastphase":1.27},{"channel":5,"Watts":"24","Pf":0.400131,"reversed":true,"phase":3.8,"lastphase":1.27},{"channel":6,"Watts":" 5","Pf":0.474841,"phase":3.8,"lastphase":1.27},{"channel":7,"Watts":" 0","Pf":0,"phase":3.8,"lastphase":1.27},{"channel":8,"Watts":"52","Pf":0.969458,"phase":3.8,"lastphase":1.27},{"channel":9,"Watts":"18","Pf":0.382351,"reversed":true,"phase":3.8,"lastphase":1.27},{"channel":10,"Watts":" 6","Pf":0.544188,"reversed":true,"phase":3.8,"lastphase":1.27},{"channel":11,"Watts":"677","Pf":0.747267,"reversed":true,"phase":3.8,"lastphase":1.27},{"channel":12,"Watts":"26","Pf":0.5329,"reversed":true,"phase":3.8,"lastphase":1.27},{"channel":13,"Watts":" 0","Pf":0,"phase":3.8,"lastphase":1.27},{"channel":14,"Watts":" 3","Pf":0.404697,"phase":3.8,"lastphase":1.27}]}
-            $series = $this->getSeries();            
+            $series = $this->getSeries();
             $this->setConfiguration('nbInputs', count($_status['inputs']));
             for ($i = 0; $i < count($_status['inputs']); $i++) {
                 $this->createCmdInfo($_status['inputs'][$i], 'input', $series[$i]);
             }
         }
         if (isset($_status['outputs'])) {
+            log::add(__CLASS__, 'debug', __FUNCTION__ . ' ' . __('début', __FILE__) . ' outputs=' . json_encode($_status['outputs']) . $this->getConfiguration('nbOutputs'));
             //{"outputs":[{"name":"PuissanceTotale","units":"Watts","value":874.2493},{"name":"Tension","units":"Volts","value":239.4988}]}
             $this->setConfiguration('nbOutputs', count($_status['outputs']));
             for ($i = 0; $i < count($_status['outputs']); $i++) {
                 $this->createCmdInfo($_status['outputs'][$i], 'output');
             }
         }
+        //$this->save();
     }
 
     public function createCmdInfo($_IO, $_type, $_serie = array())
@@ -330,7 +333,7 @@ class iotawatt extends eqLogic
             $cmd->setTemplate('mobile', 'core::tile');
             $cmd->setGeneric_type(self::getParamUnits($unit, 'generic'));
             $cmd->save();
- 
+
             log::add(__CLASS__, 'debug', 'CREATEINFO IO7: ' .json_encode(utils::o2a($cmd)));
             if ($unit == 'Watts') { // création d'une commande de consommation
                 if ($_type == 'input') {
@@ -385,11 +388,11 @@ class iotawatt extends eqLogic
         }
         return false;
     }
-  
+
     public function getSensors()
     {
         $allCmds = $this->getCmd('info');
-        //make an array with $logicalId=>url_to_send to 
+        //make an array with $logicalId=>url_to_send to
         $cmds = array_filter(array_map(function($cmd) {
             return array($cmd->getLogicalId() => $cmd->getConfiguration('serie') . '.' . strtolower($cmd->getConfiguration('valueType')) . '.d' . $cmd->getConfiguration('round'));
         }, $allCmds));
@@ -401,11 +404,14 @@ class iotawatt extends eqLogic
         //$value = $this->getStatus('lastValueUpdate', '') != '' ? $this->getStatus('lastValueUpdate') : 's-' . self::convertCrontabToMinutes(config::byKey('autorefresh', 'iotawatt', '*/1 * * * *')) . 'm';
         $group = $this->getConfiguration('group', 'auto');
         if ($group == 'manual') {
-           $group = implode('', array_map(fn($item) => $item ?? '', $this->getConfiguration('manualGroup', '5m')));
+          // $group = implode('', array_map(fn($item) => $item ?? '', $this->getConfiguration('manualGroup', '5m'))); PHP >= 7.4 only
+            $group = implode('', array_map(function($item) {
+                return $item !== null ? $item : '';
+            }, $this->getConfiguration('manualGroup', '5m')));
         }
         $resolution = $this->getConfiguration('resolution', 'high');
         if ($this->getStatus('lastValueUpdate', 0)) {
-            $begin = $this->getStatus('lastValueUpdate');
+            $begin = $this->getStatus('lastValueUpdate', 0);
             $timeout = 6;
             $missing = 'zero';
         } else {
@@ -525,16 +531,10 @@ class iotawatt extends eqLogic
         }
         $_version = jeedom::versionAlias($_version);
 
-        $replace['#lastDbm_value#'] = $this->getStatus('lastDbm');
+        $replace['#lastDbm_value#'] = $this->getStatus('rssi');
         $replace['#lastCommunication_value#'] = $this->getStatus('lastCommunication');
-        $replace['#lastProduction_value#'] = $this->getStatus('lastProduction');
         $replace['#lastAlive_value#'] = $this->getStatus('lastAlive');
         $replace['#createdAt_value#'] = $this->getStatus('createdAt');
-
-        $replace['#orientation_value#'] = $this->getConfiguration('orientation');
-        $replace['#tilt_value#'] = $this->getConfiguration('tilt');
-        $replace['#nbModules_value#'] = $this->getConfiguration('numberOfPanels');
-        $replace['#puissance_value#'] = $this->getConfiguration('power');
 
         foreach ($this->getCmd('info', null) as $cmd) {
             $replace['#cmd_' . $cmd->getLogicalId() . '_id#'] = $cmd->getId();
@@ -565,6 +565,42 @@ class iotawattCmd extends cmd
     {
         $eqLogic = $this->getEqLogic();
         log::add('iotawatt', 'debug', __("Action sur ", __FILE__) . $this->getLogicalId() . __(" avec options ", __FILE__) . json_encode($_options));
-///command?restart=yes
+        switch ($this->getSubType()) {
+            case 'slider':
+                $replace['#slider#'] = floatval($_options['slider']);
+                break;
+            case 'color':
+                $replace['#color#'] = $_options['color'];
+                break;
+            case 'select':
+                $replace['#select#'] = $_options['select'];
+                break;
+            case 'message':
+                $replace['#title#'] = $_options['title'];
+                $replace['#message#'] = $_options['message'];
+                if ($_options['message'] == '' && $_options['title'] == '') {
+                  throw new Exception(__('Le message et le sujet ne peuvent pas être vide', __FILE__));
+                }
+                break;
+        }
+        $value = str_replace(array_keys($replace),$replace,$this->getConfiguration('updateCmdToValue', ''));
+
+        switch ($this->getLogicalId()) {
+            case 'refresh':
+                if (count($eqLogic->getCmd('info')) == 0) {
+                    $eqLogic->setStatus('lastValueUpdate', 0);
+                    //return;
+                }
+                $eqLogic->getSeries();
+                $eqLogic->getSensors();
+                break;
+            case 'reboot':
+                $reboot = $eqLogic->request('command?restart=yes');
+
+                log::add('iotawatt', 'debug', __FUNCTION__ . ' : ' . __('fin  (false)', __FILE__) . json_encode($reboot));
+                break;
+        }
+
+        ///command?restart=yes
     }
 }
