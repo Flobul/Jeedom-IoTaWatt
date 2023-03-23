@@ -129,7 +129,7 @@ $eqLogics = eqLogic::byType($plugin->getId());
                   <input type="checkbox" class="eqLogicAttr form-control" id="widgetTemplate" data-l1key="configuration" data-l2key="widgetTemplate" />
                 </div>
               </div>
-                  
+
               <div class="form-group">
                 <label class="col-sm-4 control-label help" data-help="{{Renseignez l'adresse IP}}">{{Adresse IP}}
                 </label>
@@ -176,37 +176,37 @@ $eqLogics = eqLogic::byType($plugin->getId());
                   </select>
                 </div>
               </div>
-              <div class="form-group" id="idManualGroup">    
-                  <label class="col-sm-4 control-label help">{{Intervalle}}     
-                      <sup><i class="fas fa-question-circle tooltips tippied" title="{{Intervalle entre chaque valeur.}}<br\>{{Attention : un trop petit intervalle pour une plage trop grande peut mettre du temps/de la ressource à être récupéré.}}<br\>{{10s : (10 secondes)}}<br\>{{5m : (cinq minutes)}}<br\>{{1h : (une heure)}}<br\>{{1M : (un mois)}}"></i></sup>    
-                  </label>    
+              <div class="form-group" id="idManualGroup">
+                  <label class="col-sm-4 control-label help">{{Intervalle}}
+                      <sup><i class="fas fa-question-circle tooltips tippied" title="{{Intervalle entre chaque valeur.}}<br\>{{Attention : un trop petit intervalle pour une plage trop grande peut mettre du temps/de la ressource à être récupéré.}}<br\>{{10s : (10 secondes)}}<br\>{{5m : (cinq minutes)}}<br\>{{1h : (une heure)}}<br\>{{1M : (un mois)}}"></i></sup>
+                  </label>
                   <div class="col-sm-6" style="display:inline-flex">
                       <select class="eqLogicAttr form-control" data-l1key="configuration" data-l2key="manualGroup" data-l3key="value" title="{{Valeur}}" >
-                          <option value="1">1</option>    
-                          <option value="2">2</option>    
-                          <option value="3">3</option>    
-                          <option value="4">4</option>    
-                          <option value="5">5</option>    
-                          <option value="6">6</option>    
-                          <option value="7">7</option>    
-                          <option value="8">8</option>    
-                          <option value="9">9</option>    
-                          <option value="10">10</option>    
-                          <option value="15">15</option>    
-                          <option value="30">30</option>    
-                          <option value="50">50</option>    
-                      </select>    
-                      <select class="eqLogicAttr form-control" data-l1key="configuration" data-l2key="manualGroup" data-l3key="unit" title="{{Unité}}" >    
-                          <option value="s">{{seconde(s)}}</option>    
-                          <option value="m">{{minute(s)}}</option>    
-                          <option value="h">{{heure(s)}}</option>    
-                          <option value="d">{{jour(s)}}</option>    
-                          <option value="w">{{semaine(s)}}</option>    
-                          <option value="M">{{mois(s)}}</option>    
-                          <option value="y">{{année(s)}}</option>    
-                      </select>    
-                  </div>    
-              </div>    
+                          <option value="1">1</option>
+                          <option value="2">2</option>
+                          <option value="3">3</option>
+                          <option value="4">4</option>
+                          <option value="5">5</option>
+                          <option value="6">6</option>
+                          <option value="7">7</option>
+                          <option value="8">8</option>
+                          <option value="9">9</option>
+                          <option value="10">10</option>
+                          <option value="15">15</option>
+                          <option value="30">30</option>
+                          <option value="50">50</option>
+                      </select>
+                      <select class="eqLogicAttr form-control" data-l1key="configuration" data-l2key="manualGroup" data-l3key="unit" title="{{Unité}}" >
+                          <option value="s">{{seconde(s)}}</option>
+                          <option value="m">{{minute(s)}}</option>
+                          <option value="h">{{heure(s)}}</option>
+                          <option value="d">{{jour(s)}}</option>
+                          <option value="w">{{semaine(s)}}</option>
+                          <option value="M">{{mois(s)}}</option>
+                          <option value="y">{{année(s)}}</option>
+                      </select>
+                  </div>
+              </div>
             </fieldset>
           </form>
         </div>
@@ -237,12 +237,13 @@ $eqLogics = eqLogic::byType($plugin->getId());
 			        ?>
 			    </div>
               <div class="form-group">
-                <div class="col-sm-10">
+                <div class="col-sm-10" style="display:none;">
                   <center>
-                    <img src="plugins/iotawatt/core/config/img/iotawatt.png" data-original=".svg" id="img_device" class="img-responsive" style="max-height:450px;max-width:400px" onerror="this.src='core/img/no_image.gif'" />
+                    <img src="plugins/iotawatt/plugin_info/iotawatt_icon.png" data-original=".svg" id="img_device" class="img-responsive" style="max-height:450px;max-width:400px" onerror="this.src='core/img/no_image.gif'" />
                   </center>
                 </div>
               </div>
+              <a class="btn btn-sm btn-success eqLogicAction roundedLeft roundedRight" data-action="backup"><i class="icon kiko-save"></i> {{Backup}}</a>
             </fieldset>
           </form>
         </div>

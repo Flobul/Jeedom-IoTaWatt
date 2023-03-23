@@ -23,7 +23,7 @@ class iotawatt extends eqLogic
 {
     /*     * *************************Attributs****************************** */
     public static $_widgetPossibility   = array('custom' => true, 'custom::layout' => false);
-    public static $_pluginVersion = '0.40';
+    public static $_pluginVersion = '0.50';
 
     /*     * ***********************Methode statique*************************** */
     public function getParamUnits($_unit, $_param) {
@@ -335,7 +335,7 @@ class iotawatt extends eqLogic
             $cmd->save();
 
             log::add(__CLASS__, 'debug', 'CREATEINFO IO7: ' .json_encode(utils::o2a($cmd)));
-            if ($unit == 'Watts') { // création d'une commande de consommation
+            if ($unit == 'Watts' /*ajouter condition via config plugin*/) { // création d'une commande de consommation
                 if ($_type == 'input') {
                     $_IO['manual'] = true;
                     $_serie['unit'] = 'Wh';

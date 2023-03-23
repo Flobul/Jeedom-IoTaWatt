@@ -30,9 +30,6 @@ if (!is_object($eqLogic)) {
 $series = $eqLogic->getSeries();
 $IO = $eqLogic->getIotaWattStatus(array('inputs' => true, 'outputs' => true));
 
-log::add('iotawatt', 'debug', __('TESTADDCOMMAND1 : ', __FILE__) . json_encode($series));
-log::add('iotawatt', 'debug', __('TESTADDCOMMAND2 : ', __FILE__) . json_encode($IO));
-
 ?>
 <div role="tabpanel">
   <div class="tab-content" id="div_displayCmdConfigure" style="overflow-x:hidden">
@@ -58,7 +55,7 @@ log::add('iotawatt', 'debug', __('TESTADDCOMMAND2 : ', __FILE__) . json_encode($
                               $options = '';
                               $options .= '<option value="' . $series[$i]['name'] . '" data-type="input" data-channel="' . $IO['inputs'][$i]['channel'] . '">' . $series[$i]['name'] . ' > '. $series[$i]['unit'] . '</option>';
                               echo $options;
-                            
+
                           }
                           if (count($IO['outputs']) > 0)  echo '<optgroup label="{{Sorties}}" id="group"></optgroup>';
                           for ($j = 0; $j < count($IO['outputs']); $j++) {
@@ -121,7 +118,7 @@ $('#bt_cmdCreateSave').off().on('click',function() {
 	var voltpower = $('#voltPower option:selected').value();
 	var roundValue = $('#roundValue option:selected').value();
     var type = $('#series_id option:selected').data('type');
-    var channel = $('#series_id option:selected').data('channel');                  
+    var channel = $('#series_id option:selected').data('channel');
     const units = {
       Volts: "{{V}}",
       Hz: "{{Hz}}",
