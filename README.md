@@ -1,4 +1,4 @@
-# Jeedom-IotaWatt
+# Jeedom-IoTaWatt
 
 Plugin to retrieve informations from IoTaWatt box.
 
