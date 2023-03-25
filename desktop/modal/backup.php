@@ -31,7 +31,7 @@ $file = 'config.txt';
 $config = $eqLogic->request('/' . $file);
 $old = json_decode(file_get_contents($path . $file), TRUE);
 
-function arrayDiffRecursive(array $firstArray,array  $secondArray, bool $reverse = false): array
+function arrayDiffRecursive(array $firstArray,array  $secondArray, bool $reverse = false): array 
 {
     $first = 'old';
     $second = 'new';
@@ -70,7 +70,7 @@ function arrayDiffRecursive(array $firstArray,array  $secondArray, bool $reverse
       </a><a class="btn btn-success btn-sm roundedRight roundedLeft" id="bt_cmdCreateSave"><i class="fas fa-check-circle"></i> {{Sauvegarder}}</a>
     </span>
   </div>
-    <?php
+    <?php 
       $update = false;
       if (is_array($config) && $config['device']) {
           if (is_array($old) && $old['device']) {
@@ -91,7 +91,7 @@ function arrayDiffRecursive(array $firstArray,array  $secondArray, bool $reverse
           }
       }
       if ($update) {
-          if (!is_dir($path)){
+          if (!is_dir($path)){   
               mkdir($path, 0700);
           }
           file_put_contents($path . $file, json_encode($config, JSON_PRETTY_PRINT));

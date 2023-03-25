@@ -30,18 +30,6 @@ function iotawatt_install() {
 		$cron->setTimeout(30);
 		$cron->save();
 	}
-  
-	$cron2 = cron::byClassAndFunction('iotawatt', 'updateHistory');
-	if (!is_object($cron2)) {
-		$cron2 = new cron();
-		$cron2->setClass('iotawatt');
-		$cron2->setFunction('updateHistory');
-		$cron2->setEnable(1);
-		$cron2->setDeamon(0);
-		$cron2->setSchedule('0 3 * * *');
-		$cron2->setTimeout(30);
-		$cron2->save();
-	}
 }
 
 function iotawatt_update() {
@@ -57,31 +45,12 @@ function iotawatt_update() {
 	$cron->setTimeout(30);
 	$cron->save();
 	$cron->stop();
-  
-	$cron2 = cron::byClassAndFunction('iotawatt', 'updateHistory');
-	if (!is_object($cron2)) {
-		$cron2 = new cron();
-	}
-    $cron2 = new cron();
-	$cron2->setClass('iotawatt');
-	$cron2->setFunction('updateHistory');
-	$cron2->setEnable(1);
-	$cron2->setDeamon(0);
-	$cron2->setSchedule('0 3 * * *');
-	$cron2->setTimeout(30);
-	$cron2->save();
-	$cron2->stop();
 }
 
 function iotawatt_remove() {
 	$cron = cron::byClassAndFunction('iotawatt', 'update');
 	if (is_object($cron)) {
 		$cron->remove();
-	}
-  
-	$cron2 = cron::byClassAndFunction('iotawatt', 'updateHistory');
-	if (is_object($cron2)) {
-		$cron2->remove();
 	}
 }
 

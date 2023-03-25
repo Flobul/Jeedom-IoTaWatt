@@ -22,8 +22,8 @@ require_once __DIR__ . "/../../../../core/php/core.inc.php";
 class iotawatt extends eqLogic
 {
     /*     * *************************Attributs****************************** */
-    public static $_widgetPossibility   = array('custom' => true, 'custom::layout' => false);
-    public static $_pluginVersion = '0.50';
+    public static $_widgetPossibility = array('custom' => true, 'custom::layout' => false);
+    public static $_pluginVersion = '0.60';
 
     /*     * ***********************Methode statique*************************** */
     public function getParamUnits($_unit, $_param) {
@@ -138,7 +138,8 @@ class iotawatt extends eqLogic
                     try {
                         foreach (eqLogic::byType('iotawatt', true) as $iotawatt) {
                             $iotawatt->getSeries();
-                            $this->updateStatus($this->getIotaWattStatus(array('passwords' => true, 'stats' => true, 'wifi' => true, 'inputs' => true, 'outputs' => true, 'device' => true, 'stats' => true)))->save();
+                            $iotawatt->updateStatus($iotawatt->getIotaWattStatus(array('passwords' => true, 'stats' => true, 'wifi' => true, 'device' => true)));
+                            $iotawatt->save();
                         }
                     } catch (Exception $exc) {
                         log::add('iotawatt', 'error', __('Erreur : ', __FILE__) . $exc->getMessage());
@@ -149,6 +150,97 @@ class iotawatt extends eqLogic
             }
         }
         log::add(__CLASS__, 'debug', __FUNCTION__ . ' : ' . __('fin', __FILE__));
+    }
+
+    public static function deamon_info() {
+        $return = array();
+        $return['log'] = 'iotawatt';
+        $return['state'] = 'nok';
+        $pid = trim(shell_exec('ps ax | grep "/iotawattd.php" | grep -v "grep" | wc -l'));
+        if ($pid != '' && $pid != '0') {
+            $return['state'] = 'ok';
+        }
+        $return['launchable'] = 'ok';
+
+        return $return;
+    }
+
+    public static function deamon_start($_debug = false) {
+        log::add(__CLASS__, 'info', __('Lancement du service iotawatt', __FILE__));
+        $deamon_info = self::deamon_info();
+        if ($deamon_info['launchable'] != 'ok') {
+            throw new Exception(__('Veuillez vérifier la configuration', __FILE__));
+        }
+        if ($deamon_info['state'] == 'ok') {
+            self::deamon_stop();
+            sleep(2);
+        }
+        log::add('iotawatt', 'info', __('Lancement du démon iotawatt', __FILE__));
+        $cmd = substr(dirname(__FILE__),0,strpos (dirname(__FILE__),'/core/class')).'/resources/iotawattd.php';
+        log::add('iotawatt', 'debug', __('Commande du Deamon : ', __FILE__) . $cmd);
+        $result = exec('sudo php ' . $cmd . ' >> ' . log::getPathToLog('iotawattd') . ' 2>&1 &');
+        if (strpos(strtolower($result), 'error') !== false || strpos(strtolower($result), 'traceback') !== false) {
+            log::add('iotawatt', 'error', 'Deamon error : ' . $result);
+            return false;
+        }
+        sleep(1);
+        $i = 0;
+        while ($i < 30) {
+            $deamon_info = self::deamon_info();
+            if ($deamon_info['state'] == 'ok') {
+                break;
+            }
+            sleep(1);
+            $i++;
+        }
+        if ($i >= 30) {
+            log::add('iotawatt', 'error', 'Impossible de lancer le démon iotawattd', 'unableStartDeamon');
+            return false;
+        }
+        log::add('iotawatt', 'info', __('Démon iotawattd lancé', __FILE__));
+        return true;
+    }
+
+    public static function deamon_stop() {
+        log::add('iotawatt', 'info', __('Arrêt du service iotawatt', __FILE__));
+        $cmd = '/iotawattd.php';
+        exec('sudo kill -9 $(ps aux | grep "'.$cmd.'" | awk \'{print $2}\')');
+        sleep(1);
+        exec('sudo kill -9 $(ps aux | grep "'.$cmd.'" | awk \'{print $2}\')');
+        sleep(1);
+        $deamon_info = self::deamon_info();
+        if ($deamon_info['state'] == 'ok') {
+            exec('sudo kill -9 $(ps aux | grep "'.$cmd.'" | awk \'{print $2}\')');
+            sleep(1);
+        } else {
+            return true;
+        }
+        $deamon_info = self::deamon_info();
+        if ($deamon_info['state'] == 'ok') {
+            exec('sudo kill -9 $(ps aux | grep "'.$cmd.'" | awk \'{print $2}\')');
+            sleep(1);
+            return true;
+        }
+    }
+
+    public static function health() {
+        $return = array();
+
+        $mem = exec("ps aux | grep iotawatt | grep -v sudo | head -n1 | awk '/[0-9]/{print $5}'");
+        $advice = __('Mémoire allouée par le processus', __FILE__);
+        $state = false;
+        if ($mem < 300000) {
+            $state = true;
+        }
+
+        $credentials = array(
+            'test' => __('Mémoire utilisée', __FILE__),
+            'result' => $mem . ' Ko',
+            'advice' => $advice,
+            'state' => $state
+        );
+        array_unshift($return, $credentials);
+        return $return;
     }
 
 	public function getUrl() {
@@ -183,7 +275,7 @@ class iotawatt extends eqLogic
             $rebootCmd->setSubType('other');
             $rebootCmd->save();
         }
-
+      
         $refreshCmd = $this->getCmd('action', 'refresh');
         if (!is_object($refreshCmd)) {
             $refreshCmd = new iotawattCmd();
@@ -275,7 +367,13 @@ class iotawatt extends eqLogic
             $series = $this->getSeries();
             $this->setConfiguration('nbInputs', count($_status['inputs']));
             for ($i = 0; $i < count($_status['inputs']); $i++) {
-                $this->createCmdInfo($_status['inputs'][$i], 'input', $series[$i]);
+                $cmdInput = $this->createCmdInfo($_status['inputs'][$i], 'input', $series[$i]);
+                if (is_object($cmdInput)) {
+                    $unit = $cmdInput->getConfiguration('valueType') === 'Volts' ? 'Vrms' : $cmdInput->getConfiguration('valueType');
+                    if ($cmdInput->execCmd() !== $cmdInput->formatValue(floatval($_status['inputs'][$i][$unit]))) {
+                        $cmdInput->event(floatval($_status['inputs'][$i][$unit]), date('Y-m-d H:i:s', $_status['stats']['currenttime']));
+                    }
+                }
             }
         }
         if (isset($_status['outputs'])) {
@@ -283,7 +381,16 @@ class iotawatt extends eqLogic
             //{"outputs":[{"name":"PuissanceTotale","units":"Watts","value":874.2493},{"name":"Tension","units":"Volts","value":239.4988}]}
             $this->setConfiguration('nbOutputs', count($_status['outputs']));
             for ($i = 0; $i < count($_status['outputs']); $i++) {
-                $this->createCmdInfo($_status['outputs'][$i], 'output');
+                $cmdOutput = $this->createCmdInfo($_status['outputs'][$i], 'output');
+                //{"name":"tutu","units":"Watts","value":0} 
+                if (is_object($cmdOutput)) {
+                    $unit = $cmdOutput->getConfiguration('valueType') === 'Volts' ? 'Vrms' : $cmdOutput->getConfiguration('valueType');
+                    if ($cmdOutput->execCmd() !== $cmdOutput->formatValue(floatval($_status['outputs'][$i]['value']))) {
+                        if ($_status['outputs'][$i]['units'] == $unit) {
+                            $cmdOutput->event(floatval($_status['outputs'][$i]['value']), date('Y-m-d H:i:s', $_status['stats']['currenttime']));
+                        }
+                    }
+                }
             }
         }
         //$this->save();
@@ -333,7 +440,7 @@ class iotawatt extends eqLogic
             $cmd->setTemplate('mobile', 'core::tile');
             $cmd->setGeneric_type(self::getParamUnits($unit, 'generic'));
             $cmd->save();
-
+ 
             log::add(__CLASS__, 'debug', 'CREATEINFO IO7: ' .json_encode(utils::o2a($cmd)));
             if ($unit == 'Watts' /*ajouter condition via config plugin*/) { // création d'une commande de consommation
                 if ($_type == 'input') {
@@ -346,7 +453,7 @@ class iotawatt extends eqLogic
                 $this->createCmdInfo($_IO, $_type, $_serie);
             }
         } else {
-            log::add(__CLASS__, 'debug', __FUNCTION__ . ' ' . __('Commande déjà existante ', __FILE__) . $cmd->getLogicalId());
+            //log::add(__CLASS__, 'debug', __FUNCTION__ . ' ' . __('Commande déjà existante ', __FILE__) . $cmd->getLogicalId());
             if ($cmd->getConfiguration('serie') != $serie) {
                 $cmd->setConfiguration('serie', $serie);
             }
@@ -388,11 +495,12 @@ class iotawatt extends eqLogic
         }
         return false;
     }
-
+  
     public function getSensors()
     {
+        $resultat = array();
         $allCmds = $this->getCmd('info');
-        //make an array with $logicalId=>url_to_send to
+        //make an array with $logicalId=>url_to_send to 
         $cmds = array_filter(array_map(function($cmd) {
             return array($cmd->getLogicalId() => $cmd->getConfiguration('serie') . '.' . strtolower($cmd->getConfiguration('valueType')) . '.d' . $cmd->getConfiguration('round'));
         }, $allCmds));
@@ -411,7 +519,7 @@ class iotawatt extends eqLogic
         }
         $resolution = $this->getConfiguration('resolution', 'high');
         if ($this->getStatus('lastValueUpdate', 0)) {
-            $begin = $this->getStatus('lastValueUpdate', 0);
+            $begin = $this->getStatus('lastValueUpdate');
             $timeout = 6;
             $missing = 'zero';
         } else {
@@ -461,7 +569,9 @@ class iotawatt extends eqLogic
                     return $nbUpdated;
                 }, $cmds);
             }
-            $this->setStatus('lastValueUpdate', $resultat > 0 ? $seriesValues['range'][1] : 0);
+            if (count($resultat) > 0) {
+                $this->setStatus('lastValueUpdate', $seriesValues['range'][1]);
+            }
         }
     }
 
@@ -584,7 +694,7 @@ class iotawattCmd extends cmd
                 break;
         }
         $value = str_replace(array_keys($replace),$replace,$this->getConfiguration('updateCmdToValue', ''));
-
+      
         switch ($this->getLogicalId()) {
             case 'refresh':
                 if (count($eqLogic->getCmd('info')) == 0) {
@@ -600,7 +710,7 @@ class iotawattCmd extends cmd
                 log::add('iotawatt', 'debug', __FUNCTION__ . ' : ' . __('fin  (false)', __FILE__) . json_encode($reboot));
                 break;
         }
-
+        
         ///command?restart=yes
     }
 }

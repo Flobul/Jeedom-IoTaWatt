@@ -24,7 +24,6 @@
    }
    $plugin = plugin::byId('iotawatt');
    sendVarToJS('version', iotawatt::$_pluginVersion);
-
    ?>
 
 <form class="form-horizontal">
@@ -77,8 +76,8 @@
 		<i class="fas fa-cogs"></i> {{Paramètres}}
 		</legend>
           <div class="form-group">
-              <label class="col-lg-4 control-label">{{Intervalle de rafraîchissement des informations (cron)}}
-      <sup><i class="fas fa-question-circle" title="{{Sélectionnez l'intervalle auquel le plugin ira récupérer les informations de iotawatt.}}"></i></sup>
+              <label class="col-lg-4 control-label">{{Intervalle de rafraîchissement de toutes les informations (cron)}}
+      <sup><i class="fas fa-question-circle" title="{{Sélectionnez l'intervalle auquel le plugin ira récupérer les informations de iotawatt.}}</br>{{En fonction des commandes infos de l'équipement, les valeurs des unités Volts, Watts, Wh, Amps, VA, Hz, PF, VAR, VARh seront mises à jour.}}"></i></sup>
               </label>
               <div class="col-lg-4">
                   <select class="configKey form-control" data-l1key="autorefresh" >
@@ -91,6 +90,35 @@
                       <option value="*/15 * * * *">{{Toutes les 15 minutes}}</option>
                       <option value="*/30 * * * *">{{Toutes les 30 minutes}}</option>
                       <option value="*/45 * * * *">{{Toutes les 45 minutes}}</option>
+                      <option value="">{{Jamais}}</option>
+                  </select>
+              </div>
+          </div>
+          <div class="form-group">
+              <label class="col-lg-4 control-label">{{Intervalle de rafraîchissement des informations de puissance/tension (démon)}}
+      <sup><i class="fas fa-question-circle" title="{{Sélectionnez l'intervalle auquel le plugin ira récupérer les informations de iotawatt.}}</br>{{Seules les valeurs d'entrées (0=Volts, 1-14=Watts) et sorties (Watts) sont mises à jour.}}"></i></sup>
+              </label>
+              <div class="col-lg-4">
+                  <select class="configKey form-control" data-l1key="deamonRefresh" >
+                      <option value="1">{{Toutes les secondes}}</option>
+                      <option value="2">{{Toutes les 2 secondes}}</option>
+                      <option value="3">{{Toutes les 3 secondes}}</option>
+                      <option value="4">{{Toutes les 4 secondes}}</option>
+                      <option value="5">{{Toutes les 5 secondes}}</option>
+                      <option value="6">{{Toutes les 6 secondes}}</option>
+                      <option value="7">{{Toutes les 7 secondes}}</option>
+                      <option value="8">{{Toutes les 8 secondes}}</option>
+                      <option value="9">{{Toutes les 9 secondes}}</option>
+                      <option value="10">{{Toutes les 10 secondes}}</option>
+                      <option value="15">{{Toutes les 15 secondes}}</option>
+                      <option value="20">{{Toutes les 20 secondes}}</option>
+                      <option value="25">{{Toutes les 25 secondes}}</option>
+                      <option value="30">{{Toutes les 30 secondes}}</option>
+                      <option value="35">{{Toutes les 35 secondes}}</option>
+                      <option value="40">{{Toutes les 40 secondes}}</option>
+                      <option value="45">{{Toutes les 45 secondes}}</option>
+                      <option value="50">{{Toutes les 50 secondes}}</option>
+                      <option value="55">{{Toutes les 55 secondes}}</option>
                       <option value="">{{Jamais}}</option>
                   </select>
               </div>
