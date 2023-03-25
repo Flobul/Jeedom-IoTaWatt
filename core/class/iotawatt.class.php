@@ -275,7 +275,7 @@ class iotawatt extends eqLogic
             $rebootCmd->setSubType('other');
             $rebootCmd->save();
         }
-      
+
         $refreshCmd = $this->getCmd('action', 'refresh');
         if (!is_object($refreshCmd)) {
             $refreshCmd = new iotawattCmd();
@@ -371,7 +371,7 @@ class iotawatt extends eqLogic
                 if (is_object($cmdInput)) {
                     $unit = $cmdInput->getConfiguration('valueType') === 'Volts' ? 'Vrms' : $cmdInput->getConfiguration('valueType');
                     if ($cmdInput->execCmd() !== $cmdInput->formatValue(floatval($_status['inputs'][$i][$unit]))) {
-                        $cmdInput->event(floatval($_status['inputs'][$i][$unit]), date('Y-m-d H:i:s', $_status['stats']['currenttime']));
+                        $cmdInput->event(round(floatval($_status['inputs'][$i][$unit]),2), date('Y-m-d H:i:s', $_status['stats']['currenttime']));
                     }
                 }
             }
@@ -382,12 +382,12 @@ class iotawatt extends eqLogic
             $this->setConfiguration('nbOutputs', count($_status['outputs']));
             for ($i = 0; $i < count($_status['outputs']); $i++) {
                 $cmdOutput = $this->createCmdInfo($_status['outputs'][$i], 'output');
-                //{"name":"tutu","units":"Watts","value":0} 
+                //{"name":"tutu","units":"Watts","value":0}
                 if (is_object($cmdOutput)) {
                     $unit = $cmdOutput->getConfiguration('valueType') === 'Volts' ? 'Vrms' : $cmdOutput->getConfiguration('valueType');
-                    if ($cmdOutput->execCmd() !== $cmdOutput->formatValue(floatval($_status['outputs'][$i]['value']))) {
-                        if ($_status['outputs'][$i]['units'] == $unit) {
-                            $cmdOutput->event(floatval($_status['outputs'][$i]['value']), date('Y-m-d H:i:s', $_status['stats']['currenttime']));
+                    if ($_status['outputs'][$i]['units'] == $unit) {
+                        if ($cmdOutput->execCmd() !== $cmdOutput->formatValue(floatval($_status['outputs'][$i]['value']))) {
+                            $cmdOutput->event(round(floatval($_status['outputs'][$i]['value']),2), date('Y-m-d H:i:s', $_status['stats']['currenttime']));
                         }
                     }
                 }
@@ -436,11 +436,12 @@ class iotawatt extends eqLogic
             $cmd->setConfiguration('maxValue', self::getParamUnits($unit, 'maxValue'));
             $cmd->setConfiguration('manualGroup', array('value' => '5', 'unit' => 'm'));
             $cmd->setConfiguration('group', 'auto');
+            $cmd->setConfiguration('historizeRound', 2);
             $cmd->setTemplate('dashboard', 'core::tile');
             $cmd->setTemplate('mobile', 'core::tile');
             $cmd->setGeneric_type(self::getParamUnits($unit, 'generic'));
             $cmd->save();
- 
+
             log::add(__CLASS__, 'debug', 'CREATEINFO IO7: ' .json_encode(utils::o2a($cmd)));
             if ($unit == 'Watts' /*ajouter condition via config plugin*/) { // création d'une commande de consommation
                 if ($_type == 'input') {
@@ -495,12 +496,12 @@ class iotawatt extends eqLogic
         }
         return false;
     }
-  
+
     public function getSensors()
     {
         $resultat = array();
         $allCmds = $this->getCmd('info');
-        //make an array with $logicalId=>url_to_send to 
+        //make an array with $logicalId=>url_to_send to
         $cmds = array_filter(array_map(function($cmd) {
             return array($cmd->getLogicalId() => $cmd->getConfiguration('serie') . '.' . strtolower($cmd->getConfiguration('valueType')) . '.d' . $cmd->getConfiguration('round'));
         }, $allCmds));
@@ -625,6 +626,52 @@ class iotawatt extends eqLogic
         return false;
     }
 
+    public static function reloadHistory($_id) {
+        $cmd = iotawattCmd::byId($_id);
+        if (is_object($cmd)) {
+            $result = false;
+            $cmd->emptyHistory();
+            $eqLogic = $cmd->getEqLogic();
+            $cmd->event(0);
+            $params = array(
+                'select' => '[time.local.iso,' . $cmd->getConfiguration('serie') . '.' . strtolower($cmd->getConfiguration('valueType')) . '.d' . $cmd->getConfiguration('round') . ']',
+                'begin'  => 'y-4y',
+                'end'    =>  $eqLogic->getStatus('lastValueUpdate', 's'), //si 's', il y aura des valeurs en trop
+                'group'  => '2h', //{ *auto | all | <n> {s | m | h | d | w | M | y}}
+                'format' => 'json', //{ *json | csv}
+                'header' => 'yes', //{ *no | yes }
+                'missing' => 'skip', //{ null | *skip | zero}'
+                'resolution' => 'high', //{ low | high }
+                'limit' => 'none' //{n | none | *1000}
+            );
+            $seriesValues = $eqLogic->request('query?' . self::buildQueryString($params), array(), 'GET', 20);
+
+            if (is_array($seriesValues) && isset($seriesValues['data'])) {
+                foreach ($seriesValues['data'] as $datas) {
+                    $oldValue = $cmd->execCmd();
+                    $value = floatval($datas[1]);
+                    switch ($cmd->getConfiguration('valueType')) {
+                        case 'PF':
+                            $value = $oldValue + $value * 100;
+                            break;
+                        case 'Wh':
+                            if ($cmd->getUnite() == 'kWh') {
+                                $value = $oldValue + $value / 1000;
+                            } else {
+                                $value = $oldValue + $value;
+                            }
+                            break;
+                        default:
+                            $value = $oldValue + $value;
+                    }
+                    $cmd->event($value, str_replace('T', ' ', $datas[0]));
+                    $result = true;
+                }
+            }
+            return $result;
+        }
+    }
+
     public function getImage()
     {
         return 'plugins/iotawatt/plugin_info/iotawatt_icon.png';
@@ -694,7 +741,7 @@ class iotawattCmd extends cmd
                 break;
         }
         $value = str_replace(array_keys($replace),$replace,$this->getConfiguration('updateCmdToValue', ''));
-      
+
         switch ($this->getLogicalId()) {
             case 'refresh':
                 if (count($eqLogic->getCmd('info')) == 0) {
@@ -710,7 +757,7 @@ class iotawattCmd extends cmd
                 log::add('iotawatt', 'debug', __FUNCTION__ . ' : ' . __('fin  (false)', __FILE__) . json_encode($reboot));
                 break;
         }
-        
+
         ///command?restart=yes
     }
 }

@@ -32,7 +32,41 @@ $('.eqLogicAttr[data-l1key="configuration"][data-l2key="group"]').on('change', f
     }
 });
 
- function addCmdToTable(_cmd) {
+$('body').delegate('.cmdAction[data-action=reloadHistory]', 'click', function() {
+    var id = $(this).parents('tr').data('cmd_id');
+    $.ajax({
+        async: true,
+        type: "POST",
+        url: "plugins/iotawatt/core/ajax/iotawatt.ajax.php",
+        data: {
+            action: 'reloadHistory',
+            id: id
+        },
+        dataType: 'json',
+        global: false,
+        error: function(request, status, error) {
+            handleAjaxError(request, status, error);
+        },
+        success: function(data) {
+            if (data.state != 'ok') {
+                $('#div_alert').showAlert({
+                    message: data.result,
+                    level: 'danger'
+                });
+                return;
+            }
+            if (data.result) {
+               $('#div_alert').showAlert({
+                    message: '{{Historique remis à jour depuis IoTaWatt.}}',
+                    level: 'success'
+                });
+            }
+        }
+    });
+});
+
+
+function addCmdToTable(_cmd) {
    if (!isset(_cmd)) {
      var _cmd = {configuration: {}};
    }
@@ -53,12 +87,12 @@ $('.eqLogicAttr[data-l1key="configuration"][data-l2key="group"]').on('change', f
   tr += '        <option value="">{{Aucune}}</option>'
   tr += '    </select>'
   tr += '</td>'
- 
+
   tr += '<td>';
   tr += '    <span class="type" type="' + init(_cmd.type) + '">' + jeedom.cmd.availableType() + '</span>';
   tr += '    <span class="subType" subType="' + init(_cmd.subType) + '"></span>';
   tr += '</td>';
-  
+
   tr += '<td>';
   if (init(_cmd.type) == 'info') {
     tr += '    <select class="cmdAttr form-control input-sm" data-l1key="configuration" data-l2key="type" title="{{Entrée/Sortie}}" disabled>';
@@ -144,12 +178,15 @@ $('.eqLogicAttr[data-l1key="configuration"][data-l2key="group"]').on('change', f
   tr += '<input class="tooltips cmdAttr form-control input-sm" data-l1key="unite" placeholder="Unité" title="{{Unité}}" style="width:30%;max-width:80px;display:inline-block;margin-right:2px;">'
   tr += '</div>'
   tr += '</td>'
-   
+
   tr += '<td style="min-width:80px;width:200px;">';
   tr += '<div class="input-group">';
   if (is_numeric(_cmd.id) && _cmd.id != '') {
     tr += '<a class="btn btn-default btn-xs cmdAction roundedLeft" data-action="configure" title="{{Configuration de la commande}} ' + _cmd.type + '"><i class="fa fa-cogs"></i></a>';
     tr += '<a class="btn btn-success btn-xs cmdAction" data-action="test" title="{{Tester}}"><i class="fa fa-rss"></i> {{Tester}}</a>';
+  }
+  if (init(_cmd.configuration.totalConsumption)) {
+      tr += '<a class="btn btn-warning btn-xs cmdAction" data-action="reloadHistory" title="{{Recharger l\'historique}}"><i class="fas fa-history"></i></a>';
   }
   tr += '<a class="btn btn-danger btn-xs cmdAction roundedRight" data-action="remove" title="{{Suppression de la commande}} ' + _cmd.type + '"><i class="fas fa-minus-circle"></i></a>';
   tr += '</tr>';
@@ -210,7 +247,7 @@ $(document).on("change",'.cmdAttr[data-l1key="configuration"][data-l2key="valueT
                 }
             }
           }
-       });        
+       });
     }
 });
 

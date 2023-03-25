@@ -30,7 +30,7 @@ try {
         $result = iotawatt::getParamUnits(init('unit'), 'all');
         ajax::success($result);
     }
-  
+
     if (init('action') == 'getImage') {
         $eqLogic = iotawatt::byId(init('id'));
         if (!is_object($eqLogic)) {
@@ -38,6 +38,10 @@ try {
         }
         $result = $eqLogic->getImage();
         ajax::success($result);
+    }
+
+    if (init('action') == 'reloadHistory') {
+        ajax::success(iotawatt::reloadHistory(init('id')));
     }
 
 	throw new Exception('Aucune methode correspondante');
