@@ -55,7 +55,7 @@ $IO = $eqLogic->getIotaWattStatus(array('inputs' => true, 'outputs' => true));
                               $options = '';
                               $options .= '<option value="' . $series[$i]['name'] . '" data-type="input" data-channel="' . $IO['inputs'][$i]['channel'] . '">' . $series[$i]['name'] . ' > '. $series[$i]['unit'] . '</option>';
                               echo $options;
-                            
+
                           }
                           if (count($IO['outputs']) > 0)  echo '<optgroup label="{{Sorties}}" id="group"></optgroup>';
                           for ($j = 0; $j < count($IO['outputs']); $j++) {
@@ -118,7 +118,7 @@ $('#bt_cmdCreateSave').off().on('click',function() {
 	var voltpower = $('#voltPower option:selected').value();
 	var roundValue = $('#roundValue option:selected').value();
     var type = $('#series_id option:selected').data('type');
-    var channel = $('#series_id option:selected').data('channel');                  
+    var channel = $('#series_id option:selected').data('channel');
     const units = {
       Volts: "{{V}}",
       Hz: "{{Hz}}",
@@ -149,7 +149,7 @@ $('#bt_cmdCreateSave').off().on('click',function() {
 			name: units_name[voltpower] + ' ' + series,
 			type: 'info',
 			subType: 'numeric',
-			logicalId: type + '_' + channel,
+			logicalId: type + '_' + channel + '_' + units[voltpower],
 			isVisible: 1,
 			isHistorized: 1,
             unite: units[voltpower] || '',

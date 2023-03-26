@@ -41,7 +41,7 @@ try {
     }
 
     if (init('action') == 'reloadHistory') {
-        ajax::success(iotawatt::reloadHistory(init('id')));
+        ajax::success(iotawatt::reloadHistory(init('id'), init('begin')));
     }
 
 	throw new Exception('Aucune methode correspondante');

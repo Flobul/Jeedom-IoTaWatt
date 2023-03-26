@@ -34,37 +34,128 @@ $('.eqLogicAttr[data-l1key="configuration"][data-l2key="group"]').on('change', f
 
 $('body').delegate('.cmdAction[data-action=reloadHistory]', 'click', function() {
     var id = $(this).parents('tr').data('cmd_id');
-    $.ajax({
-        async: true,
-        type: "POST",
-        url: "plugins/iotawatt/core/ajax/iotawatt.ajax.php",
-        data: {
-            action: 'reloadHistory',
-            id: id
-        },
-        dataType: 'json',
-        global: false,
-        error: function(request, status, error) {
-            handleAjaxError(request, status, error);
-        },
-        success: function(data) {
-            if (data.state != 'ok') {
-                $('#div_alert').showAlert({
-                    message: data.result,
-                    level: 'danger'
-                });
-                return;
-            }
-            if (data.result) {
-               $('#div_alert').showAlert({
-                    message: '{{Historique remis à jour depuis IoTaWatt.}}',
-                    level: 'success'
-                });
+    var message = '{{Êtes-vous sûr de vouloir supprimer l\'historique de la commande et de le remplacer par celui de IoTaWatt ? Cette action est irréversible.}}</br></br>';
+    const now = new Date();
+
+    message += '{{Quelle date de début souhaitez-vous utiliser pour récupérer l\'historique ?}}';
+    message += '<div id="md_history" class="md_history" data-modalType="md_history">';
+    message += '    <div class="options col-lg-12" style="">';
+    message += '        <input id="in_startDate" class="btn btn-default form-control input-sm in_datepicker btnStartDate roundedLeft" style="width: 150px;" value="'+now.toISOString().substring(0, 18).replace("T", " ")+'"/>';
+    message += '        <a class="btn btn-default btn-sm btnStartDate roundedLeft" data-value="0" title="{{Maintenant (Ràz)}}">{{Zéro}}</a>';
+    message += '        <a class="btn btn-default btn-sm btnStartDate" data-value="today" title="{{Aujourd\'hui}}">{{Aujourd\'hui}}</a>';
+    message += '        <a class="btn btn-default btn-sm btnStartDate" data-value="week" title="{{La semaine}}">{{Semaine}}</a>';
+    message += '        <a class="btn btn-default btn-sm btnStartDate" data-value="month" title="{{Début du mois}}">{{Mois}}</a>';
+    message += '        <a class="btn btn-default btn-sm btnStartDate" data-value="year" title="{{Début de l\'année}}">{{Année}}</a>';
+    message += '        <a class="btn btn-success btn-sm btnStartDate roundedRight" data-value="all" title="{{Toutes}}">{{Toutes}}</a>';
+    message +=     '</div>';
+    message += '</div>';
+
+    message += '<script>';
+    message += '    jeedomUtils.datePickerInit("Y-m-d H:i:00");';
+    message += '</script>';
+    bootbox.dialog({
+        title: '{{Remplacer l\'historique de la commande}}',
+        message: message,
+        buttons: {
+            "{{Annuler}}": {
+              className: "btn-danger",
+              callback: function() {}
+            },
+            success: {
+                label: "{{Recharger}}",
+                className: "btn-success",
+                callback: function() {
+                    const val = $('#md_history .btn-success.btnStartDate').data('value') ?? $('#md_history .btn-success.btnStartDate').value();
+                    switch (val) {
+                        case '0':
+                            var value = 's';
+                            break;
+                        case 'today':
+                            var value = 'd'
+                            break;
+                        case 'week':
+                            var value = 'w';
+                            break;
+                        case 'month':
+                            var value = 'M';
+                            break;
+                        case 'year':
+                            var value = 'y';
+                            break;
+                        case 'all':
+                        case undefined:
+                            var value = '';
+                            break;
+                        default:
+                            var value = val.replace(" ", "T");
+                            break;
+                    }
+                    $.ajax({
+                        async: true,
+                        type: "POST",
+                        url: "plugins/iotawatt/core/ajax/iotawatt.ajax.php",
+                        data: {
+                            action: 'reloadHistory',
+                            id: id,
+                            begin: value
+                        },
+                        dataType: 'json',
+                        global: false,
+                        error: function(request, status, error) {
+                            handleAjaxError(request, status, error);
+                        },
+                        success: function(data) {
+                            if (data.state != 'ok') {
+                                $('#div_alert').showAlert({
+                                    message: data.result,
+                                    level: 'danger'
+                                });
+                                return;
+                            }
+                            if (data.result) {
+                               $('#div_alert').showAlert({
+                                    message: '{{Historique remis à jour depuis IoTaWatt.}}',
+                                    level: 'success'
+                                });
+                            }
+                        }
+                    });
+                }
             }
         }
     });
 });
 
+$('body').delegate('#md_history .btnStartDate', 'click', function() {
+    if ($(this).hasClass('btn-success')) {
+        $('.btnStartDate').removeClass('btn-success');
+        $(this).removeClass('btn-success');
+    } else {
+        $('.btnStartDate').removeClass('btn-success');
+        $(this).addClass('btn-success');
+    }
+});
+
+$('.cmdAction[data-action=addCommand]').on('click', function() {
+    $('#md_modal').dialog({
+        title: "{{Ajout de commande}}"
+    });
+    $('#md_modal').load('index.php?v=d&plugin=iotawatt&modal=addCommand&eqLogic_id='+$('.eqLogicAttr[data-l1key=id]').value()).dialog('open');
+});
+
+$('.eqLogicAction[data-action=backup]').on('click', function() {
+    $('#md_modal').dialog({
+        title: "{{Backup}}"
+    });
+    $('#md_modal').load('index.php?v=d&plugin=iotawatt&modal=backup&eqLogic_id='+$('.eqLogicAttr[data-l1key=id]').value()).dialog('open');
+});
+
+$('#bt_healthiotawatt').off('click').on('click', function() {
+  $('#md_modal').dialog({
+    title: "{{Santé IotaWatt}}"
+  });
+  $('#md_modal').load('index.php?v=d&plugin=iotawatt&modal=health').dialog('open');
+});
 
 function addCmdToTable(_cmd) {
    if (!isset(_cmd)) {
@@ -249,25 +340,4 @@ $(document).on("change",'.cmdAttr[data-l1key="configuration"][data-l2key="valueT
           }
        });
     }
-});
-
-$('.cmdAction[data-action=addCommand]').on('click', function() {
-    $('#md_modal').dialog({
-        title: "{{Ajout de commande}}"
-    });
-    $('#md_modal').load('index.php?v=d&plugin=iotawatt&modal=addCommand&eqLogic_id='+$('.eqLogicAttr[data-l1key=id]').value()).dialog('open');
-});
-
-$('.eqLogicAction[data-action=backup]').on('click', function() {
-    $('#md_modal').dialog({
-        title: "{{Backup}}"
-    });
-    $('#md_modal').load('index.php?v=d&plugin=iotawatt&modal=backup&eqLogic_id='+$('.eqLogicAttr[data-l1key=id]').value()).dialog('open');
-});
-
-$('#bt_healthiotawatt').off('click').on('click', function() {
-  $('#md_modal').dialog({
-    title: "{{Santé IotaWatt}}"
-  });
-  $('#md_modal').load('index.php?v=d&plugin=iotawatt&modal=health').dialog('open');
 });

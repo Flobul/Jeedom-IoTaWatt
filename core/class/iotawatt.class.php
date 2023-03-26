@@ -23,7 +23,7 @@ class iotawatt extends eqLogic
 {
     /*     * *************************Attributs****************************** */
     public static $_widgetPossibility = array('custom' => true, 'custom::layout' => false);
-    public static $_pluginVersion = '0.60';
+    public static $_pluginVersion = '0.70';
 
     /*     * ***********************Methode statique*************************** */
     public function getParamUnits($_unit, $_param) {
@@ -367,11 +367,23 @@ class iotawatt extends eqLogic
             $series = $this->getSeries();
             $this->setConfiguration('nbInputs', count($_status['inputs']));
             for ($i = 0; $i < count($_status['inputs']); $i++) {
-                $cmdInput = $this->createCmdInfo($_status['inputs'][$i], 'input', $series[$i]);
+                $cmdInput = $this->createCmdInfo($_status['inputs'][$i], 'input', $series[$i]);//originaly for Watts
                 if (is_object($cmdInput)) {
                     $unit = $cmdInput->getConfiguration('valueType') === 'Volts' ? 'Vrms' : $cmdInput->getConfiguration('valueType');
                     if ($cmdInput->execCmd() !== $cmdInput->formatValue(floatval($_status['inputs'][$i][$unit]))) {
                         $cmdInput->event(round(floatval($_status['inputs'][$i][$unit]),2), date('Y-m-d H:i:s', $_status['stats']['currenttime']));
+                    }
+                }
+                if ($_status['inputs'][$i]['Hz']) {
+                    $cmdHz = $this->getCmd('info', 'input_' . $_status['inputs'][$i]['channel'] . '_Hz');
+                    if (is_object($cmdHz)) {
+                        $cmdHz->event(round(floatval($_status['inputs'][$i]['Hz']),2), date('Y-m-d H:i:s', $_status['stats']['currenttime']));
+                    }
+                }
+                if ($_status['inputs'][$i]['Pf']) {
+                    $cmdPf = $this->getCmd('info', 'input_' . $_status['inputs'][$i]['channel'] . '_PF');
+                    if (is_object($cmdPf)) {
+                        $cmdPf->event(round(floatval($_status['inputs'][$i]['Pf']),2), date('Y-m-d H:i:s', $_status['stats']['currenttime']));
                     }
                 }
             }
@@ -626,18 +638,38 @@ class iotawatt extends eqLogic
         return false;
     }
 
-    public static function reloadHistory($_id) {
+    public static function reloadHistory($_id, $_begin = 'y-4y') {
         $cmd = iotawattCmd::byId($_id);
         if (is_object($cmd)) {
             $result = false;
             $cmd->emptyHistory();
             $eqLogic = $cmd->getEqLogic();
-            $cmd->event(0);
+            $i = 0;
+            switch ($_begin) {
+                case 's':
+                  $group = '5s';
+                  break;
+                case 'd':
+                  $group = '30s';
+                  break;
+                case 'w':
+                  $group = '5m';
+                  break;
+                case 'M':
+                  $group = '30m';
+                  break;
+                case 'y':
+                  $group = '6h';
+                  break;
+                default:
+                  $group = '12h';
+                  break;
+            }
             $params = array(
                 'select' => '[time.local.iso,' . $cmd->getConfiguration('serie') . '.' . strtolower($cmd->getConfiguration('valueType')) . '.d' . $cmd->getConfiguration('round') . ']',
-                'begin'  => 'y-4y',
-                'end'    =>  $eqLogic->getStatus('lastValueUpdate', 's'), //si 's', il y aura des valeurs en trop
-                'group'  => '2h', //{ *auto | all | <n> {s | m | h | d | w | M | y}}
+                'begin'  => $_begin,
+                'end'    => $eqLogic->getStatus('lastValueUpdate', 's'), //si 's', il y aura des valeurs en trop
+                'group'  => $group, //{ *auto | all | <n> {s | m | h | d | w | M | y}}
                 'format' => 'json', //{ *json | csv}
                 'header' => 'yes', //{ *no | yes }
                 'missing' => 'skip', //{ null | *skip | zero}'
@@ -648,7 +680,8 @@ class iotawatt extends eqLogic
 
             if (is_array($seriesValues) && isset($seriesValues['data'])) {
                 foreach ($seriesValues['data'] as $datas) {
-                    $oldValue = $cmd->execCmd();
+                    $oldValue = $i==0?0:$cmd->execCmd();
+                    $i++;
                     $value = floatval($datas[1]);
                     switch ($cmd->getConfiguration('valueType')) {
                         case 'PF':
