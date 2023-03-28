@@ -123,13 +123,21 @@ $eqLogics = eqLogic::byType($plugin->getId());
               </div>
 
               <div class="form-group">
+                <label class="col-sm-4 control-label help" data-help="{{Cocher la case pour laisser le plugin réorganiser les commandes à la sauvegarde de l'équipement.}}</br>{{Laissez décoché pour modifier l'ordre des commandes.}}">{{Réorganiser les commandes automatiquement}}
+                </label>
+                <div class="col-sm-8">
+                  <input type="checkbox" class="eqLogicAttr form-control" id="reOrderCmd" data-l1key="configuration" data-l2key="reOrderCmd" />
+                </div>
+              </div>
+
+              <div class="form-group">
                 <label class="col-sm-4 control-label help" data-help="{{Cocher la case pour utiliser le widget associé au type de l'appareil.}}</br>{{Laissez décoché pour laisser le core générer le widget par défaut.}}">{{Widget équipement}}
                 </label>
                 <div class="col-sm-8">
                   <input type="checkbox" class="eqLogicAttr form-control" id="widgetTemplate" data-l1key="configuration" data-l2key="widgetTemplate" />
                 </div>
               </div>
-                  
+
               <div class="form-group">
                 <label class="col-sm-4 control-label help" data-help="{{Renseignez l'adresse IP}}">{{Adresse IP}}
                 </label>
@@ -176,37 +184,37 @@ $eqLogics = eqLogic::byType($plugin->getId());
                   </select>
                 </div>
               </div>
-              <div class="form-group" id="idManualGroup">    
-                  <label class="col-sm-4 control-label help">{{Intervalle}}     
-                      <sup><i class="fas fa-question-circle tooltips tippied" title="{{Intervalle entre chaque valeur.}}<br\>{{Attention : un trop petit intervalle pour une plage trop grande peut mettre du temps/de la ressource à être récupéré.}}<br\>{{10s : (10 secondes)}}<br\>{{5m : (cinq minutes)}}<br\>{{1h : (une heure)}}<br\>{{1M : (un mois)}}"></i></sup>    
-                  </label>    
+              <div class="form-group" id="idManualGroup">
+                  <label class="col-sm-4 control-label help">{{Intervalle}}
+                      <sup><i class="fas fa-question-circle tooltips tippied" title="{{Intervalle entre chaque valeur.}}<br\>{{Attention : un trop petit intervalle pour une plage trop grande peut mettre du temps/de la ressource à être récupéré.}}<br\>{{10s : (10 secondes)}}<br\>{{5m : (cinq minutes)}}<br\>{{1h : (une heure)}}<br\>{{1M : (un mois)}}"></i></sup>
+                  </label>
                   <div class="col-sm-6" style="display:inline-flex">
                       <select class="eqLogicAttr form-control" data-l1key="configuration" data-l2key="manualGroup" data-l3key="value" title="{{Valeur}}" >
-                          <option value="1">1</option>    
-                          <option value="2">2</option>    
-                          <option value="3">3</option>    
-                          <option value="4">4</option>    
-                          <option value="5">5</option>    
-                          <option value="6">6</option>    
-                          <option value="7">7</option>    
-                          <option value="8">8</option>    
-                          <option value="9">9</option>    
-                          <option value="10">10</option>    
-                          <option value="15">15</option>    
-                          <option value="30">30</option>    
-                          <option value="50">50</option>    
-                      </select>    
-                      <select class="eqLogicAttr form-control" data-l1key="configuration" data-l2key="manualGroup" data-l3key="unit" title="{{Unité}}" >    
-                          <option value="s">{{seconde(s)}}</option>    
-                          <option value="m">{{minute(s)}}</option>    
-                          <option value="h">{{heure(s)}}</option>    
-                          <option value="d">{{jour(s)}}</option>    
-                          <option value="w">{{semaine(s)}}</option>    
-                          <option value="M">{{mois(s)}}</option>    
-                          <option value="y">{{année(s)}}</option>    
-                      </select>    
-                  </div>    
-              </div>    
+                          <option value="1">1</option>
+                          <option value="2">2</option>
+                          <option value="3">3</option>
+                          <option value="4">4</option>
+                          <option value="5">5</option>
+                          <option value="6">6</option>
+                          <option value="7">7</option>
+                          <option value="8">8</option>
+                          <option value="9">9</option>
+                          <option value="10">10</option>
+                          <option value="15">15</option>
+                          <option value="30">30</option>
+                          <option value="50">50</option>
+                      </select>
+                      <select class="eqLogicAttr form-control" data-l1key="configuration" data-l2key="manualGroup" data-l3key="unit" title="{{Unité}}" >
+                          <option value="s">{{seconde(s)}}</option>
+                          <option value="m">{{minute(s)}}</option>
+                          <option value="h">{{heure(s)}}</option>
+                          <option value="d">{{jour(s)}}</option>
+                          <option value="w">{{semaine(s)}}</option>
+                          <option value="M">{{mois(s)}}</option>
+                          <option value="y">{{année(s)}}</option>
+                      </select>
+                  </div>
+              </div>
             </fieldset>
           </form>
         </div>

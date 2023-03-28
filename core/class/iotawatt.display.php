@@ -20,6 +20,16 @@
 
 class iotawatt_display extends eqLogic
 {
+    /**
+     * Affiche une carte d'action personnalisée avec une icône et un texte.
+     *
+     * @param string $action_name Le nom de l'action à afficher.
+     * @param string $fa_icon L'icône Font Awesome à afficher.
+     * @param string $attr (Optionnel) Les attributs HTML supplémentaires à ajouter à la carte d'action.
+     * @param string $class (Optionnel) La classe CSS supplémentaire à ajouter à la carte d'action.
+     *
+     * @return void
+     */
     public static function displayActionCard($action_name, $fa_icon, $attr = '', $class = '') {
         $actionCard = '<div class="eqLogicDisplayAction eqLogicAction cursor ' . $class . '" ';
         if ($attr != '') $actionCard .= $attr;
@@ -30,6 +40,18 @@ class iotawatt_display extends eqLogic
         echo $actionCard;
     }
 
+    /**
+     * Affiche un bouton d'action avec un logo, un texte et un attribut data-action.
+     *
+     * @param string $class La classe CSS à ajouter au bouton d'action.
+     * @param string $action L'attribut data-action à ajouter au bouton d'action.
+     * @param string $title Le titre à afficher lorsque l'utilisateur survole le bouton d'action.
+     * @param string $logo L'icône Font Awesome à afficher à gauche du texte.
+     * @param string $text Le texte à afficher à droite de l'icône.
+     * @param bool $display (Optionnel) Définit si le bouton doit être affiché ou masqué par défaut.
+     *
+     * @return void
+     */
     public static function displayBtnAction($class, $action, $title, $logo, $text, $display = FALSE) {
         $btn = '<a class="eqLogicAction btn btn-sm ' . $class . '"';
         $btn .= '    data-action="' . $action . '"';
@@ -42,6 +64,12 @@ class iotawatt_display extends eqLogic
         echo $btn;
     }
 
+    /**
+     * Affiche une section d'aperçu de la liste des équipements
+     *
+     * @param array $eqLogics Liste des équipements à afficher
+     * @return void
+     */
     public static function displayEqLogicThumbnailContainer($eqLogics) {
         echo '<div class="panel panel-default">';
         echo '    <h3 class="panel-title">';
@@ -61,7 +89,16 @@ class iotawatt_display extends eqLogic
         echo '        </div>';
         echo '    </div>';
     }
-  
+
+    /**
+     * Affiche un groupe de formulaire pour une configuration d'équipement
+     *
+     * @param string $datal2key Clé de la configuration dans le deuxième niveau de l'objet JSON
+     * @param string|null $type Texte à afficher en tant que titre du groupe de formulaire
+     * @param string $l1key Clé de la configuration dans le premier niveau de l'objet JSON
+     * @param string $unit Unité de mesure, si applicable
+     * @return void
+     */
     public static function displayFormGroupEqLogic($datal2key, $type = null, $l1key = 'configuration', $unit = '')
     {
         $div = '<div class="form-group">';
