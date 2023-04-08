@@ -84,7 +84,7 @@ $('body').delegate('.cmdAction[data-action=reloadHistory]', 'click', function() 
                             break;
                         case 'all':
                         case undefined:
-                            var value = '';
+                            var value = 'y-4y';
                             break;
                         default:
                             var value = val.replace(" ", "T");
