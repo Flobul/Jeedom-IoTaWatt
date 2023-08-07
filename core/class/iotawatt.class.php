@@ -786,7 +786,7 @@ class iotawatt extends eqLogic
         }
 
         $params = array(
-            'select' => '[time.local.unix,' . $url . ']',
+            'select' => '[time.utc.unix,' . $url . ']',
             'begin'  => $begin,
             'end'    => 's',
             'group'  => $group, //{ *auto | all | <n> {s | m | h | d | w | M | y}}
