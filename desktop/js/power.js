@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with Jeedom. If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
     function sortIotawattTable() {
       $("#table_poweriotawatt").tablesorter({
         textExtraction: function(node) {
@@ -61,11 +61,10 @@
         });
         // Met à jour le contenu du div avec la somme calculée
         var totalPowerSum = document.getElementById("totalPowerSum");
-        totalPowerSum.innerHTML = "{{Puissance totale}} : <span class='label label-info'>" + totalPower.toFixed(2) + " Wh</span>";
+        totalPowerSum.innerHTML = "{{Puissance totale}} : <span class='label label-info'>" + totalPower.toFixed(2) + " W</span>";
     }
 
     document.addEventListener('DOMContentLoaded', function() {
-
         // Ajoutez une fonction de mise à jour à chaque commande de puissance
         var powerElements = document.querySelectorAll(".cmd.power");
         powerElements.forEach(function (element) {
@@ -88,7 +87,7 @@
                 updateTableSort();
             });
         });
-      
+
         // gére le clic sur les valeurs pour afficher les historiques
         var table = document.getElementById("table_poweriotawatt");
         table.addEventListener("click", function (event) {
@@ -107,7 +106,7 @@
             $('#md_modal2').dialog({title: '{{Historique}}'}).load('index.php?v=d&modal=cmd.history&id=' + cmdIds).dialog('open')
           }
         }, {capture: false})
-      
+
         sortIotawattTable(); // Initialisez le tri de la table
         updateTotalPowerSum(); // Mettez à jour la somme initiale
 });
