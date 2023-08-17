@@ -32,8 +32,10 @@ $('.eqLogicAttr[data-l1key="configuration"][data-l2key="group"]').on('change', f
     }
 });
 
-$('body').delegate('.cmdAction[data-action=reloadHistory]', 'click', function() {
-    var id = $(this).parents('tr').data('cmd_id');
+document.getElementById('table_cmd').addEventListener('click', function(event) {
+  if (_target = event.target.closest('.cmdAction[data-action="reloadHistory"]')) {
+    var id = event.target.closest('tr').getAttribute('data-cmd_id');
+    console.log(id)
     var message = '{{Êtes-vous sûr de vouloir supprimer l\'historique de la commande et de le remplacer par celui de IoTaWatt ? Cette action est irréversible.}}</br></br>';
     const now = new Date();
 
@@ -106,14 +108,14 @@ $('body').delegate('.cmdAction[data-action=reloadHistory]', 'click', function() 
                         },
                         success: function(data) {
                             if (data.state != 'ok') {
-                                $('#div_alert').showAlert({
+                                $.fn.showAlert({
                                     message: data.result,
                                     level: 'danger'
                                 });
                                 return;
                             }
                             if (data.result) {
-                               $('#div_alert').showAlert({
+                               $.fn.showAlert({
                                     message: '{{Historique remis à jour depuis IoTaWatt.}}',
                                     level: 'success'
                                 });
@@ -124,6 +126,7 @@ $('body').delegate('.cmdAction[data-action=reloadHistory]', 'click', function() 
             }
         }
     });
+}
 });
 
 $('body').delegate('#md_history .btnStartDate', 'click', function() {
@@ -156,6 +159,14 @@ $('#bt_healthiotawatt').off('click').on('click', function() {
   });
   $('#md_modal').load('index.php?v=d&plugin=iotawatt&modal=health').dialog('open');
 });
+
+$('#bt_poweriotawatt').off('click').on('click', function() {
+  $('#md_modal').dialog({
+    title: "{{Puissances IotaWatt}}"
+  });
+  $('#md_modal').load('index.php?v=d&plugin=iotawatt&modal=power').dialog('open');
+});
+
 
 function addCmdToTable(_cmd) {
    if (!isset(_cmd)) {
@@ -289,7 +300,7 @@ function addCmdToTable(_cmd) {
      id:  $('.eqLogicAttr[data-l1key=id]').value(),
      filter: {type: 'info'},
      error: function (error) {
-       $('#div_alert').showAlert({message: error.message, level: 'danger'});
+       $.fn.showAlert({message: error.message, level: 'danger'});
      },
      success: function (result) {
 
@@ -323,7 +334,7 @@ $(document).on("change",'.cmdAttr[data-l1key="configuration"][data-l2key="valueT
           },
           success: function(data) {
             if (data.state != 'ok') {
-              $('#div_alert').showAlert({
+              $.fn.showAlert({
                 message: data.result,
                 level: 'danger'
               });
