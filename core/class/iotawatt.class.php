@@ -27,12 +27,12 @@ class iotawatt extends eqLogic
      *
      * @var array
      */
-    public static $_widgetPossibility = array('custom' => true, 'custom::layout' => false);
+    public static $_widgetPossibility = array('custom' => true, 'custom::layout' => true);
     /**
      * Version du plugin.
      * @var string
      */
-    public static $_pluginVersion = '0.80';
+    public static $_pluginVersion = '0.81';
 
     /*     * ***********************Methode statique*************************** */
 

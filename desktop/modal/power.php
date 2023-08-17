@@ -19,14 +19,14 @@ if (!isConnect('admin')) {
     throw new Exception('401 Unauthorized');
 }
 $eqLogics = iotawatt::byType('iotawatt');
+function getColorForTendance($tendance) {
+    $tendance = max(-1.0, min(1.0, $tendance));
+    $hue = 120 * (1 - $tendance);
+    $hue = max(0, min(120, $hue));
+    $color = "hsl(" . $hue . ", 100%, 30%)";
+    return $color;
+}
 include_file('desktop', 'power', 'js', 'iotawatt');
-    function getColorForTendance($tendance) {
-        $tendance = max(-1.0, min(1.0, $tendance));
-        $hue = 120 * (1 - $tendance);
-        $hue = max(0, min(120, $hue));
-        $color = "hsl(" . $hue . ", 100%, 30%)";
-        return $color;
-    }
 
 ?>
 
@@ -49,7 +49,6 @@ include_file('desktop', 'power', 'js', 'iotawatt');
         border-radius: 0.25em;
     }
 </style>
-<div id="totalPowerSum"></div>
 <table class="table table-condensed tablesorter" id="table_poweriotawatt">
 	<thead>
 		<tr>
@@ -63,6 +62,7 @@ include_file('desktop', 'power', 'js', 'iotawatt');
       <?php
 
         $cmdArray = array();
+        $totalPower = 0;
         foreach ($eqLogics as $eqLogic) {
             if ($eqLogic->getIsEnable()) {
                 foreach ($eqLogic->getCmd('info') as $cmd) {
@@ -90,12 +90,15 @@ include_file('desktop', 'power', 'js', 'iotawatt');
                             $cmdArray[$eqLogic->getId().'::'.$cmd->getConfiguration('serie')]['powerUnit'] = $cmd->getUnite();
                             $cmdArray[$eqLogic->getId().'::'.$cmd->getConfiguration('serie')]['powerTendance'] = $cmd->getTendance($startHist, date('Y-m-d H:i:s'));
                             $cmdArray[$eqLogic->getId().'::'.$cmd->getConfiguration('serie')]['powerIcon'] = $cmd->getDisplay('icon', '');
+                            $totalPower += $cmdArray[$eqLogic->getId().'::'.$cmd->getConfiguration('serie')]['power'];
                         }
                     }
                 }
             }
         }
-
+        echo '<div id="totalPowerSum">';
+        echo '    {{Puissance totale}} : <span class="label label-info">' . round($totalPower,2) . ' W</span>';
+        echo '</div>';
         echo '<div class="eqLogic-widget">';
         foreach ($cmdArray as $id => $value) {
             echo '<tr>';
