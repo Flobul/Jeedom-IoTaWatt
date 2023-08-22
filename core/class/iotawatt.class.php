@@ -32,7 +32,26 @@ class iotawatt extends eqLogic
      * Version du plugin.
      * @var string
      */
-    public static $_pluginVersion = '0.81';
+    public static $_pluginVersion = '0.90';
+
+    public const HANDLESTATUS          = '/status';
+    public const HANDLEVCAL            = '/vcal';
+    public const HANDLECOMMAND         = '/command';
+    public const PRINTDIRECTORY        = '/list';
+    public const HANDLEDELETE          = '/edit';
+    public const HANDLECREATE          = '/edit';
+    public const HANDLEGETFEEDLIST     = '/feed/list.json';
+    public const HANDLEGETFEEDDATA     = '/feed/data.json';
+    public const HANDLEGRAPHCREATE     = '/graph/create';
+    public const HANDLEGRAPHUPDATE     = '/graph/update';
+    public const HANDLEGRAPHDELETE     = '/graph/delete';
+    public const HANDLEGRAPHGETALL     = '/graph/getall';
+    public const HANDLEGRAPHGETALLPLUS = '/graph/getallplusraphGetallplus';
+    public const HANDLEPASSWORDS       = '/auth';
+    public const RETURNOK              = '/nullreq';
+    public const HANDLEQUERY           = '/query';
+    public const HANDLEDSTTEST         = '/DSTtest';
+    public const HANDLEUPDATE          = '/update';
 
     /*     * ***********************Methode statique*************************** */
 
@@ -115,7 +134,7 @@ class iotawatt extends eqLogic
                 'resolution' => 'high', //{ low | high }
                 'limit' => 'none' //{n | none | *1000}
             );
-            $seriesValues = $eqLogic->request('query?' . self::buildQueryString($params), array(), 'GET', 20);
+            $seriesValues = $eqLogic->request(self::HANDLEQUERY . '?' . self::buildQueryString($params), array(), 'GET', 20);
 
             if (is_array($seriesValues) && isset($seriesValues['data'])) {
                 foreach ($seriesValues['data'] as $datas) {
@@ -359,7 +378,7 @@ class iotawatt extends eqLogic
 	public function getUrl() {
         $id = $this->getConfiguration('id', false);
         $password = $this->getConfiguration('password', false);
-        $url = 'http://' . ($id && $password ? "$id:$password@" : '') . ($this->getConfiguration('ip') ?: 'iotawatt.local') . '/';
+        $url = 'http://' . ($id && $password ? "$id:$password@" : '') . ($this->getConfiguration('ip') ?: 'iotawatt.local');
         return $url;
 	}
 
@@ -391,10 +410,11 @@ class iotawatt extends eqLogic
             $rebootCmd = new iotawattCmd();
             $rebootCmd->setName(__('Redémarrer', __FILE__));
             $rebootCmd->setLogicalId('reboot');
-            $rebootCmd->setOrder(9998);
+            $rebootCmd->setOrder(9999997);
             $rebootCmd->setEqLogic_id($this->getId());
             $rebootCmd->setType('action');
             $rebootCmd->setSubType('other');
+            $rebootCmd->setDisplay('showOnPanel', 0);
             $rebootCmd->save();
         }
 
@@ -403,11 +423,28 @@ class iotawatt extends eqLogic
             $refreshCmd = new iotawattCmd();
             $refreshCmd->setName(__('Rafraîchir', __FILE__));
             $refreshCmd->setLogicalId('refresh');
-            $refreshCmd->setOrder(9999);
+            $refreshCmd->setOrder(9999998);
             $refreshCmd->setEqLogic_id($this->getId());
             $refreshCmd->setType('action');
             $refreshCmd->setSubType('other');
+            $refreshCmd->setDisplay('showOnPanel', 0);
             $refreshCmd->save();
+        }
+
+        $deletelogCmd = $this->getCmd('action', 'deletelog');
+        if (!is_object($deletelogCmd)) {
+            $deletelogCmd = new iotawattCmd();
+            $deletelogCmd->setName(__('Supprimer les journaux', __FILE__));
+            $deletelogCmd->setLogicalId('deletelog');
+            $deletelogCmd->setOrder(9999999);
+            $deletelogCmd->setEqLogic_id($this->getId());
+            $deletelogCmd->setType('action');
+            $deletelogCmd->setSubType('select');
+            $deletelogCmd->setConfiguration('listValue', 'current|Temps réel;history|Historique;both|Les deux');
+            $deletelogCmd->setConfiguration('updateCmdToValue', '#select#');
+            $deletelogCmd->setConfiguration('actionConfirm', 1);
+            $deletelogCmd->setDisplay('showOnPanel', 0);
+            $deletelogCmd->save();
         }
     }
 
@@ -534,7 +571,7 @@ class iotawatt extends eqLogic
         if (is_array($_param)) {
             $_param = self::buildQueryString($_param);
         }
-        $status = $this->request('status?' . $_param);
+        $status = $this->request(self::HANDLESTATUS . '?' . $_param);
         if (is_array($status)) {
             return $status;
         }
@@ -684,6 +721,11 @@ class iotawatt extends eqLogic
             $cmd->setConfiguration('manualGroup', array('value' => '5', 'unit' => 'm'));
             $cmd->setConfiguration('group', 'auto');
             $cmd->setConfiguration('historizeRound', 2);
+            $showOnPanel = 0;
+            if ($_type == 'input') {
+                $showOnPanel = 1;
+            }
+            $cmd->setDisplay('showOnPanel', $showOnPanel);
             $cmd->setTemplate('dashboard', 'core::tile');
             $cmd->setTemplate('mobile', 'core::tile');
             $cmd->setGeneric_type(self::getParamUnits($unit, 'generic'));
@@ -729,7 +771,7 @@ class iotawatt extends eqLogic
     public function getSeries()
     {
         $allCmds = $this->getCmd('info');
-        $series = $this->request('query?show=series');
+        $series = $this->request(self::HANDLEQUERY . '?show=series');
         if (is_array($series) && isset($series['series'])) {
             foreach ($allCmds as $cmd){
                 $flag = false;
@@ -796,7 +838,7 @@ class iotawatt extends eqLogic
             'resolution' => $resolution, //{ low | high }
             'limit' => 'none' //{n | none | *1000}
         );
-        $seriesValues = $this->request('query?' . self::buildQueryString($params), array(), 'GET', $timeout);
+        $seriesValues = $this->request(self::HANDLEQUERY . '?' . self::buildQueryString($params), array(), 'GET', $timeout);
 
         if (is_array($seriesValues) && isset($seriesValues['data'])) {
             foreach ($seriesValues['data'] as $datas){
@@ -989,10 +1031,16 @@ class iotawattCmd extends cmd
                 $eqLogic->getSensors();
                 break;
             case 'reboot':
-                $reboot = $eqLogic->request('command?restart=yes');
+                $reboot = $eqLogic->request(iotawatt::HANDLECOMMAND . '?restart=yes');
 
                 log::add('iotawatt', 'debug', __FUNCTION__ . ' : ' . __('fin  (false)', __FILE__) . json_encode($reboot));
                 break;
+            case 'deletelog':
+                if (!in_array(array('history','current','both'))) return false;
+                $deletelog = $eqLogic->request(iotawatt::HANDLECOMMAND . '?deletelog=' . $value);
+                log::add('iotawatt', 'debug', __FUNCTION__ . ' : ' . __('fin  (false)', __FILE__) . json_encode($deletelog));
+                break;
         }
+        return true;
     }
 }
