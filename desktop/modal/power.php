@@ -30,23 +30,33 @@ function getColorForPourcentage($pourcent) {
     if (is_nan($pourcent)) {
         return "hsl(0, 0%, 50%)";
     }
+    $light = 30;
     $currentTimestamp = time();
     $startOfDayTimestamp = strtotime('today', $currentTimestamp);
     $endOfDayTimestamp = strtotime('tomorrow', $startOfDayTimestamp) - 1;
     $percentOfDay = (($currentTimestamp - $startOfDayTimestamp) / ($endOfDayTimestamp - $startOfDayTimestamp)) * 100;
     $percentOfDay = max(0, min(100, $percentOfDay));
-    $pourcent = max(-100, min(400, $pourcent));
-    if ($pourcent >= 0) {
-        // Pourcentage positif : plus proche du rouge
-        $hue = 0 + $percentOfDay * 1.2; // Ajoutez du rouge en fonction du pourcentage de la journée
-    } else {
-        // Pourcentage négatif : plus proche du vert
+    $pourcent = max(-200, min(400, $pourcent)); // Ajusté à -200 à 400 pour la transition complète
+
+    if ($pourcent < 0) {
+        // Pourcentage négatif : du vert au rouge
         $hue = 120 - $percentOfDay * 1.2; // Soustrayez du vert en fonction du pourcentage de la journée
+    } else {
+        if ($pourcent > 200) {
+            // Pourcentage supérieur à 200 : du rouge au noir
+            $hue = 0; // Rouge à 0 degrés
+            $light -= $pourcent / 10;
+        } else {
+            // Pourcentage positif : du rouge au noir
+            $hue = 0 + $percentOfDay * 1.2; // Ajoutez du rouge en fonction du pourcentage de la journée
+        }
     }
-    $hue = max(0, min(120, $hue));
-    $color = "hsl(" . $hue . ", 100%, 30%)";
+
+    $hue = max(0, min(120, 120 - $hue));
+    $color = "hsl(" . $hue . ", 100%, " . $light . "% )";
     return $color;
 }
+
 ?>
 
   <style>
@@ -95,7 +105,7 @@ function getColorForPourcentage($pourcent) {
             if ($eqLogic->getIsEnable()) {
                 foreach ($eqLogic->getCmd('info') as $cmd) {
                     if ($cmd->getConfiguration('type') == 'input') {
-                        if ($cmd->getConfiguration('serie') == 'Tension') continue;
+                        //if ($cmd->getConfiguration('serie') == 'Tension') continue;
                         if (!$cmd->getDisplay('showOnPanel')) continue;
                         $cmdArray[$eqLogic->getId().'::'.$cmd->getConfiguration('serie')]['id'] = $eqLogic->getId();
                         $cmdArray[$eqLogic->getId().'::'.$cmd->getConfiguration('serie')]['eqName'] = $eqLogic->getConfiguration('name');
@@ -112,8 +122,9 @@ function getColorForPourcentage($pourcent) {
                             $cmdArray[$eqLogic->getId().'::'.$cmd->getConfiguration('serie')]['consoName'] = $cmd->getName();
                             $cmdArray[$eqLogic->getId().'::'.$cmd->getConfiguration('serie')]['consoCollectDate'] = $cmd->getCollectDate();
                             $cmdArray[$eqLogic->getId().'::'.$cmd->getConfiguration('serie')]['consoValueDate'] = $cmd->getValueDate();
-                            $cmdArray[$eqLogic->getId().'::'.$cmd->getConfiguration('serie')]['consoTendance'] = $cmd->getTendance($startHist, date('Y-m-d H:i:s'));
-                            $cmdArray[$eqLogic->getId().'::'.$cmd->getConfiguration('serie')]['consoIcon'] = $cmd->getDisplay('icon', '');
+                            $consoTendance = $cmd->getTendance($startHist, date('Y-m-d H:i:s'));
+                            $cmdArray[$eqLogic->getId().'::'.$cmd->getConfiguration('serie')]['consoTendance'] = $consoTendance;
+                            $cmdArray[$eqLogic->getId().'::'.$cmd->getConfiguration('serie')]['logoTendanceConso'] = ($consoTendance > config::byKey('historyCalculTendanceThresholddMax')) ? '<i class="fas fa-arrow-up"></i>' : (($consoTendance < config::byKey('historyCalculTendanceThresholddMin')) ? '<i class="fas fa-arrow-down"></i>' : '<i class="fas fa-minus"></i>');                            $cmdArray[$eqLogic->getId().'::'.$cmd->getConfiguration('serie')]['consoIcon'] = $cmd->getDisplay('icon', '');
                             $cmdArray[$eqLogic->getId().'::'.$cmd->getConfiguration('serie')]['consoStats'] = $cmd->getStatistique(date('Y-m-d 00:00:00', strtotime('- 1 day')), date('Y-m-d 00:00:00'));
                         } else {
                           	$valueInfo = cmd::autoValueArray($cmd->execCmd(), 2, $cmd->getUnite());
@@ -124,7 +135,9 @@ function getColorForPourcentage($pourcent) {
                             $cmdArray[$eqLogic->getId().'::'.$cmd->getConfiguration('serie')]['powerName'] = $cmd->getName();
                             $cmdArray[$eqLogic->getId().'::'.$cmd->getConfiguration('serie')]['powerCollectDate'] = $cmd->getCollectDate();
                             $cmdArray[$eqLogic->getId().'::'.$cmd->getConfiguration('serie')]['powerValueDate'] = $cmd->getValueDate();
-                            $cmdArray[$eqLogic->getId().'::'.$cmd->getConfiguration('serie')]['powerTendance'] = $cmd->getTendance($startHist, date('Y-m-d H:i:s'));
+                            $powerTendance = $cmd->getTendance($startHist, date('Y-m-d H:i:s'));
+                            $cmdArray[$eqLogic->getId().'::'.$cmd->getConfiguration('serie')]['powerTendance'] = $powerTendance;
+                            $cmdArray[$eqLogic->getId().'::'.$cmd->getConfiguration('serie')]['logoTendancePower'] = ($powerTendance > config::byKey('historyCalculTendanceThresholddMax')) ? '<i class="fas fa-arrow-up"></i>' : (($powerTendance < config::byKey('historyCalculTendanceThresholddMin')) ? '<i class="fas fa-arrow-down"></i>' : '<i class="fas fa-minus"></i>');
                             $cmdArray[$eqLogic->getId().'::'.$cmd->getConfiguration('serie')]['powerIcon'] = $cmd->getDisplay('icon', '');
                             $totalPower += $cmdArray[$eqLogic->getId().'::'.$cmd->getConfiguration('serie')]['power'];
                         }
@@ -183,14 +196,15 @@ function getColorForPourcentage($pourcent) {
             echo '  </td>';
 
             echo '  <td>';
-            
+
             $valueInfoDiff = ($value['consoUnit']=='kWh'?($value['conso']*1000):$value['conso']) - $value['consoStats']['max'];
             $valueInfoT = cmd::autoValueArray($valueInfoDiff, 2, $value['consoOldUnit']);
             $consoTodayVal = round($valueInfoT[0], 2);
             $consoPourcent = round(100 * $valueInfoDiff / ($consoYesterday),2) - 100;
+            $posConsoPourcent = $consoPourcent > 0 ? '+' . $consoPourcent : $consoPourcent;
             echo '    <div class="cmd label label-info cursor history consoTotT" data-cmd_id="' . $value['consoId'] . '">' . $consoTodayVal . ' ' . $valueInfoT[1] . '</div>';
-            echo '    <div class="cmd label label-info cursor history consoTotPourcent" style="background-color:' . getColorForPourcentage($consoPourcent) . ' !important;" data-cmd_id="' . $value['consoId'] . '">' . $consoPourcent .  ' %</div>';
-            
+            echo '    <div class="cmd label label-info cursor history consoTotPourcent" style="background-color:' . getColorForPourcentage($consoPourcent) . ' !important;" data-cmd_id="' . $value['consoId'] . '">' . $posConsoPourcent .  ' %</div>';
+
             echo '  </td>';
             echo '</tr>';
         }
