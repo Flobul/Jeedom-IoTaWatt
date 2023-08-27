@@ -25,8 +25,21 @@
    $plugin = plugin::byId('iotawatt');
    sendVarToJS('version', iotawatt::$_pluginVersion);
    ?>
+   <style>
+       .icon-iotawatt {
+           font-size: 1.3em;
+           color: #94CA02;
+       }
 
-<form class="form-horizontal">
+       :root {
+           --background-color: #1987ea;
+       }
+
+       #infoCmdLinky {
+           margin-left: 5px;
+       }
+   </style>
+<form class="form-horizontal formIotawatt">
    <fieldset>
       <legend>
          <i class="fa fa-list-alt"></i> {{Général}}
@@ -60,16 +73,6 @@
                <i> {{Les dernières discussions autour du plugin}} <a class="btn btn-label btn-xs" target="_blank" href="https://community.jeedom.com/tags/plugin-iotawatt"><i class="icon jeedomapp-home-jeedom icon-iotawatt"></i><strong>{{sur le community}}</strong></a>.</i></br>
                <i> {{Pensez à mettre le tag}} <b><font font-weight="bold" size="+1">#plugin-iotawatt</font></b> {{et à fournir les log dans les balises préformatées}}.</i>
             </div>
-            <style>
-               .icon-iotawatt {
-                   font-size: 1.3em;
-                   color: #94CA02;
-               }
-
-               :root{
-                 --background-color: #1987ea;
-                }
-            </style>
          </div>
       </div>
         <legend>
@@ -86,17 +89,31 @@
                       <option value="*/3 * * * *">{{Toutes les 3 minutes}}</option>
                       <option value="*/4 * * * *">{{Toutes les 4 minutes}}</option>
                       <option value="*/5 * * * *">{{Toutes les 5 minutes}}</option>
+                      <option value="*/6 * * * *">{{Toutes les 6 minutes}}</option>
+                      <option value="*/7 * * * *">{{Toutes les 7 minutes}}</option>
+                      <option value="*/8 * * * *">{{Toutes les 8 minutes}}</option>
+                      <option value="*/9 * * * *">{{Toutes les 9 minutes}}</option>
                       <option value="*/10 * * * *">{{Toutes les 10 minutes}}</option>
                       <option value="*/15 * * * *">{{Toutes les 15 minutes}}</option>
+                      <option value="*/20 * * * *">{{Toutes les 20 minutes}}</option>
+                      <option value="*/25 * * * *">{{Toutes les 25 minutes}}</option>
                       <option value="*/30 * * * *">{{Toutes les 30 minutes}}</option>
+                      <option value="*/35 * * * *">{{Toutes les 35 minutes}}</option>
+                      <option value="*/40 * * * *">{{Toutes les 40 minutes}}</option>
                       <option value="*/45 * * * *">{{Toutes les 45 minutes}}</option>
+                      <option value="*/50 * * * *">{{Toutes les 50 minutes}}</option>
+                      <option value="*/55 * * * *">{{Toutes les 55 minutes}}</option>
+                      <option value="*/60 * * * *">{{Toutes les heures}}</option>
                       <option value="">{{Jamais}}</option>
                   </select>
               </div>
           </div>
           <div class="form-group">
               <label class="col-lg-4 control-label">{{Intervalle de rafraîchissement des informations de puissance/tension (démon)}}
-      <sup><i class="fas fa-question-circle" title="{{Sélectionnez l'intervalle auquel le plugin ira récupérer les informations de iotawatt.}}</br>{{Seules les valeurs d'entrées (0=Volts, 1-14=Watts) et sorties (Watts) sont mises à jour.}}"></i></sup>
+                  <sup>
+                      <i class="fas fa-question-circle" title="{{Sélectionnez l'intervalle auquel le plugin ira récupérer les informations de iotawatt.}}</br>{{Seules les valeurs d'entrées (0=Volts, 1-14=Watts) et sorties (Watts) sont mises à jour.}}">
+                      </i>
+                  </sup>
               </label>
               <div class="col-lg-4">
                   <select class="configKey form-control" data-l1key="deamonRefresh" >
@@ -121,6 +138,38 @@
                       <option value="55">{{Toutes les 55 secondes}}</option>
                       <option value="">{{Jamais}}</option>
                   </select>
+              </div>
+          </div>
+          <div class="form-group">
+              <label class="col-lg-4 control-label">{{Commande puissance Linky}}
+                  <sup>
+                      <i class="fas fa-question-circle" title="{{Renseignez la commande de puissance de votre compteur Linky pour l'afficher sur le panel.}}">
+                      </i>
+                  </sup>
+              </label>
+              <div class="col-lg-4 input-group">
+                  <input class="configKey form-control input-sm" data-l1key="powerLinky" />
+                  <span class="input-group-btn">
+                      <a class="btn btn-default btn-sm btn-success cmdPowerLinky"><i class="fa fa-list-alt"></i></a>
+                  </span>
+                  <span id="infoCmdPowerLinky">
+                  </span>
+              </div>
+          </div>
+          <div class="form-group">
+              <label class="col-lg-4 control-label">{{Commande consommation Linky}}
+                  <sup>
+                      <i class="fas fa-question-circle" title="{{Renseignez la commande d'index de votre compteur Linky pour l'afficher sur le panel.}}">
+                      </i>
+                  </sup>
+              </label>
+              <div class="col-lg-4 input-group">
+                  <input class="configKey form-control input-sm" data-l1key="linky" />
+                  <span class="input-group-btn">
+                      <a class="btn btn-default btn-sm btn-success cmdLinky"><i class="fa fa-list-alt"></i></a>
+                  </span>
+                  <span id="infoCmdLinky">
+                  </span>
               </div>
           </div>
       </div>

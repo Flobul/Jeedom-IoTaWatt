@@ -35,13 +35,12 @@
             if (pourcent > 200) {
                 // Pourcentage supérieur à 200 : du rouge au noir
                 hue = 0; // Rouge à 0 degrés
-                light -= pourcent / 10;
+                light -= pourcent / 10; 
             } else {
                 // Pourcentage positif : du rouge au noir
                 hue = 0 + percentOfDay * 1.2; // Ajoutez du rouge en fonction du pourcentage de la journée
             }
         }
-
         hue = Math.max(0, Math.min(120, 120 - hue));
         var color = `hsl(${hue}, 100%, ${light}%)`;
         return color;
@@ -72,21 +71,17 @@
             var valueB = extractNumericValue(cellB);
             return valueB - valueA;
         }
-
         // Trier les lignes
         rows.sort(compareRows);
-
         // Réorganiser les lignes dans le tableau
         rows.forEach(function (row) {
             tbody.appendChild(row);
         });
-
         updateTableSort(); // Appel manuel pour mettre à jour le tri
-
     }
 
     function updateTableSort() {
-        $("#table_poweriotawatt").trigger("updateAll"); // Met à jour le tri
+     //   $("#table_poweriotawatt").trigger("updateAll"); // Met à jour le tri
     }
 
     // Fonction pour mettre à jour la somme des valeurs de puissance
@@ -125,9 +120,9 @@
         }
         // Met à jour le contenu du div avec la somme calculée
         var totalConsoSum = document.querySelector("#totalSum " + _divConsoSum);
-        totalConsoSum.innerHTML = "{{Consommation totale }}"+_day+" : <span class='label label-info'>" + totalConso.toFixed(2) + " " + totalConsoUnit + "</span>";
+        totalConsoSum.innerHTML = "    {{Consommation totale}} "+_day+" : <span class='label label-info'>" + totalConso.toFixed(2) + " " + totalConsoUnit + "</span>";
     }
-
+    
     function updateTotalConsoPourcent() {
         var consoYesterday = parseFloat(document.querySelector("#totalSum .consoSumY .label").innerText);
         var consoToday = parseFloat(document.querySelector("#totalSum .consoSumT .label").innerText);
@@ -137,35 +132,16 @@
         spanConsoSumPourcent.innerHTML = "<span class='label' style='background-color:"+getColorForPourcentage(consoSumPourcent)+" !important;'>" + posConsoSumPourcent + " %</span>";
     }
 
+    function updateLinkyConsoPourcent() {
+        var consoYesterday = parseFloat(document.querySelector("#totalLinky .consoLinkyY .label").innerText);
+        var consoToday = parseFloat(document.querySelector("#totalLinky .consoLinkyT .label").innerText);
+        var consoLinkyPourcent = (100 * consoToday / consoYesterday) - 100;
+        var spanConsoLinkyPourcent = document.querySelector("#totalLinky .consoLinkyPourcent");
+        var posConsoLinkyPourcent = consoLinkyPourcent > 0 ? '+' + consoLinkyPourcent.toFixed(2) : consoLinkyPourcent.toFixed(2);
+        spanConsoLinkyPourcent.innerHTML = "<span class='label' style='background-color:"+getColorForPourcentage(consoLinkyPourcent)+" !important;'>" + posConsoLinkyPourcent + " %</span>";
+    }
+
     $(document).ready(function() {
-/*
-            $.ajax({
-              async: true,
-              type: "POST",
-              url: "plugins/iotawatt/core/ajax/iotawatt.ajax.php",
-              data: {
-                  action: 'getPowerConsoCmd'
-              },
-              error: function (error) {
-                $.hideLoading();
-                $.fn.showAlert({
-                  level: 'danger'
-                })
-              },
-              success: function (_eqLogic) {
-                  if (_eqLogic.state != 'ok') {
-                    $.fn.showAlert({
-                      level: 'danger'
-                    })
-                  }
-                  Object.keys(_eqLogic.result).forEach(function(_id) {
-                    addConsoCmdToTable(_eqLogic.result[_id]);
-
-
-                  })
-              }
-            })
-            */
         // Ajoutez une fonction de mise à jour à chaque commande de puissance
         var powerElements = document.querySelectorAll(".cmd.power");
         powerElements.forEach(function (element) {
@@ -185,7 +161,6 @@
             });
         });
 
-
         // Ajoute une fonction de mise à jour à chaque commande de consommation
         var consoElements = document.querySelectorAll(".cmd.conso");
         consoElements.forEach(function (element) {
@@ -197,41 +172,115 @@
             });
         });
 
-        // gére le clic sur les valeurs pour afficher les historiques
-        var table = document.getElementById("table_poweriotawatt");
-        table.addEventListener("click", function (event) {
-            if (event.target.matches('.history') || event.target.closest('.history') != null ) { //history in summary modal
-            event.stopImmediatePropagation()
-            event.stopPropagation()
-            if (event.ctrlKey || event.metaKey) {
-              var cmdIds = []
-              event.target.closest('div.eqLogic-widget').querySelectorAll('.history[data-cmd_id]').forEach(function(cmd) {
-                cmdIds.push(cmd.getAttribute('data-cmd_id'))
-              })
-              cmdIds = cmdIds.join('-')
-            } else {
-              var cmdIds = event.target.closest('.history[data-cmd_id]').getAttribute('data-cmd_id')
-            }
-            $('#md_modal2').dialog({title: '{{Historique}}'}).load('index.php?v=d&modal=cmd.history&id=' + cmdIds).dialog('open')
-          }
-        }, {capture: false})
-
         sortIotawattTable(); // Initialisez le tri de la table
         updateTotalPowerSum(); // Mettez à jour la somme initiale
         updateTotalConsoSum(".cmd.consoTotY", ".consoSumY", "hier"); // Met à jour la somme des conso d'hier
         updateTotalConsoSum(".cmd.consoTotT", ".consoSumT", "du jour"); // Met à jour la somme des conso du jour
         updateTotalConsoPourcent(); // Met à jour le pourcentage de conso d'hier/aujourdhui
 
-
-        document.getElementById('table_poweriotawatt').addEventListener('click', function (event) {
-          if (_target = event.target.closest('.btn.cmdAction[data-action="configure"]')) {
-            $('#md_modal2').dialog({title: '{{Historique}}'}).load('index.php?v=d&modal=cmd.configure&cmd_id=' + event.target.closest('.btn.cmdAction[data-action="configure"]').getAttribute('data-cmd_id')).dialog('open')
-            return
-          }
-
-          if (_target = event.target.closest('.btn.eqLogicAction[data-action="configureEqLogic"]')) {
-            $('#md_modal2').dialog({title: '{{Historique}}'}).load('index.php?v=d&modal=eqLogic.configure&eqLogic_id=' + event.target.closest('.btn.eqLogicAction[data-action="configureEqLogic"]').getAttribute('data-id')).dialog('open')
-            return
-          }
+        // gére le clic sur les valeurs pour afficher les historiques de Linky
+        var tableLinky = document.getElementById("totalLinky");
+        tableLinky.addEventListener('click', function (event) {
+            if (event.target.matches('.history') || event.target.closest('.history') != null ) {
+                event.stopImmediatePropagation()
+                event.stopPropagation()
+                if (event.ctrlKey || event.metaKey) {
+                    var cmdIds = []
+                    event.target.closest('div.eqLogic-widget').querySelectorAll('.history[data-cmd_id]').forEach(function(cmd) {
+                        cmdIds.push(cmd.getAttribute('data-cmd_id'))
+                    })
+                    cmdIds = cmdIds.join('-')
+                } else {
+                    var cmdIds = event.target.closest('.history[data-cmd_id]').getAttribute('data-cmd_id')
+                }
+                $('#md_modal2').dialog({title: '{{Historique}}'}).load('index.php?v=d&modal=cmd.history&id=' + cmdIds).dialog('open')
+            }
         });
+
+        var table = document.getElementById("table_poweriotawatt");
+        table.addEventListener('click', function (event) {
+            // gére le clic sur les valeurs pour afficher les historiques
+            if (event.target.matches('.history') || event.target.closest('.history') != null ) {
+                event.stopImmediatePropagation()
+                event.stopPropagation()
+                if (event.ctrlKey || event.metaKey) {
+                    var cmdIds = []
+                    event.target.closest('div.eqLogic-widget').querySelectorAll('.history[data-cmd_id]').forEach(function(cmd) {
+                        cmdIds.push(cmd.getAttribute('data-cmd_id'))
+                    })
+                    cmdIds = cmdIds.join('-')
+                } else {
+                    var cmdIds = event.target.closest('.history[data-cmd_id]').getAttribute('data-cmd_id')
+                }
+                $('#md_modal2').dialog({title: '{{Historique}}'}).load('index.php?v=d&modal=cmd.history&id=' + cmdIds).dialog('open')
+            }
+            // gére le clic sur les boutons de configuration de commandes
+            if (_target = event.target.closest('.btn.cmdAction[data-action="configure"]')) {
+                $('#md_modal2').dialog({title: '{{Historique}}'}).load('index.php?v=d&modal=cmd.configure&cmd_id=' + event.target.closest('.btn.cmdAction[data-action="configure"]').getAttribute('data-cmd_id')).dialog('open')
+                return
+            }
+
+            // gére le clic sur les boutons de configuration des équipements
+            if (_target = event.target.closest('.btn.eqLogicAction[data-action="configureEqLogic"]')) {
+                $('#md_modal2').dialog({title: '{{Historique}}'}).load('index.php?v=d&modal=eqLogic.configure&eqLogic_id=' + event.target.closest('.btn.eqLogicAction[data-action="configureEqLogic"]').getAttribute('data-id')).dialog('open')
+                return
+            }
+        });
+
+       /* var upTotals = document.querySelectorAll(".upTotals");
+        upTotals.addEventListener('click', function (event) {
+            // gére le clic sur les valeurs pour afficher les historiques
+            if (event.target.matches('.history') || event.target.closest('.history') != null ) {
+                event.stopImmediatePropagation()
+                event.stopPropagation()
+                if (event.ctrlKey || event.metaKey) {
+                    var cmdIds = []
+                    event.target.closest('div.eqLogic-widget').querySelectorAll('.history[data-cmd_id]').forEach(function(cmd) {
+                        cmdIds.push(cmd.getAttribute('data-cmd_id'))
+                    })
+                    cmdIds = cmdIds.join('-')
+                } else {
+                    var cmdIds = event.target.closest('.history[data-cmd_id]').getAttribute('data-cmd_id')
+                }
+                $('#md_modal2').dialog({title: '{{Historique}}'}).load('index.php?v=d&modal=cmd.history&id=' + cmdIds).dialog('open')
+            }
+        })
+*/
+        var totalLinky = document.querySelector('#totalLinky');
+        var linkyId = totalLinky.getAttribute('data-cmd_id');
+        if (linkyId != '') {
+            var currentDate = moment().format('YYYY-MM-DD HH:mm:ss');
+            var todayMidnight = moment().startOf('day').format('YYYY-MM-DD HH:mm:ss');
+            var yesterdayMidnight = moment().subtract(1, 'days').startOf('day').format('YYYY-MM-DD HH:mm:ss');
+
+            jeedom.cmd.addUpdateFunction(linkyId, function (_options) {
+                jeedom.history.get({ // historique d'hier
+                    cmd_id: linkyId,
+                    dateStart: yesterdayMidnight,
+                    dateEnd: todayMidnight,
+                    success: function(result) {
+                      totalLinky.querySelector('.consoLinkyY').innerHTML = "<span class='label label-info  cursor history' data-cmd_id='" + linkyId + "'>" + (result.maxValue - result.minValue).toFixed(2) + " " + result.unite + "</span>"
+                    } 
+                });
+                jeedom.history.get({ // historique d'aujourd'hui
+                    cmd_id: linkyId,
+                    dateStart: todayMidnight,
+                    dateEnd: currentDate,
+                    success: function(result) {
+                      totalLinky.querySelector('.consoLinkyT').innerHTML = "<span class='label label-info cursor history' data-cmd_id='" + result.cmd.id + "'>" + (result.maxValue - result.minValue).toFixed(2) + " " + result.unite + "</span>"
+                      updateLinkyConsoPourcent(); // Met à jour le pourcentage de conso d'hier/aujourdhui
+                    } 
+                });
+            });
+            jeedom.cmd.refreshValue([{cmd_id: linkyId}]);
+
+            var totalPowerLinky = document.querySelector('#totalLinky .powerLinky');
+            var linkyPowerId = totalPowerLinky.getAttribute('data-cmd_id');
+            if (linkyPowerId != '') {
+                jeedom.cmd.addUpdateFunction(linkyPowerId, function (_options) {
+                    totalPowerLinky.innerHTML = '<span class="label label-info cursor history" data-cmd_id="' + _options.cmd_id + '">' + _options.display_value + ' ' + _options.unit + '</span>';
+                    totalPowerLinky.setAttribute('title', '{{Date de collecte : }}' + _options.collectDate + '<br/>{{Date de valeur : }}' + _options.valueDate);
+                })
+            }
+        }
     });

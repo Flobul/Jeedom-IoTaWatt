@@ -44,7 +44,7 @@ try {
         ajax::success(iotawatt::reloadHistory(init('id'), init('begin')));
     }
 
-	throw new Exception('Aucune methode correspondante');
+	throw new Exception('Aucune méthode correspondante');
 	/*     * *********Catch exeption*************** */
 } catch (Exception $e) {
 	ajax::error(displayExeption($e), $e->getCode());
