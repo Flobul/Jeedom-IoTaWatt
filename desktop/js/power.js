@@ -13,6 +13,29 @@
  * You should have received a copy of the GNU General Public License
  * along with Jeedom. If not, see <http://www.gnu.org/licenses/>.
  */
+    function updateTendanceClass(element) {
+        var nextSibling = element.nextElementSibling;
+        var previousSibling = element.previousElementSibling;
+        if (nextSibling) {
+            element.classList.remove('redTendance', 'blueTendance', 'greenTendance');
+
+            if (nextSibling.classList.contains('fa-minus')) {
+                element.classList.add('blueTendance');
+            } else if (nextSibling.classList.contains('fa-arrow-down')) {
+                element.classList.add('greenTendance');
+            } else if (nextSibling.classList.contains('fa-arrow-up')) {
+                element.classList.add('redTendance');
+            }
+        } else if (previousSibling) {
+            if (previousSibling.querySelector('i').classList.contains('fa-minus')) {
+                element.classList.add('blueTendance');
+            } else if (previousSibling.querySelector('i').classList.contains('fa-arrow-down')) {
+                element.classList.add('greenTendance');
+            } else if (previousSibling.querySelector('i').classList.contains('fa-arrow-up')) {
+                element.classList.add('redTendance');
+            }
+        }
+    }
 
     function getColorForPourcentage(pourcent) {
         if (isNaN(pourcent)) {
@@ -87,7 +110,7 @@
     // Fonction pour mettre à jour la somme des valeurs de puissance
     function updateTotalPowerSum() {
         var totalPower = 0;
-        var eachPower = document.querySelectorAll(".cmd.power");
+        var eachPower = document.querySelectorAll('.cmd.power');
         eachPower.forEach(function(a) {
             if (a.getAttribute('data-cmd_id') != null && a.getAttribute('data-linky') != 1) {
                 var valueStr = a.innerText;
@@ -100,12 +123,14 @@
             }
         });
         // Met à jour le contenu du div avec la somme calculée
-        var totalPowerSum = document.querySelector(".cmd.power[data-action=powerSum]");
-        totalPowerSum.innerHTML = totalPower.toFixed(0) + " W";
+        var totalPowerSum = document.querySelector('.cmd.power[data-action="powerSum"]');
+        if (totalPowerSum) {
+            totalPowerSum.innerHTML = totalPower.toFixed(0) + ' W';
+        }
     }
 
     // Fonction pour mettre à jour la somme des valeurs de consommation
-    function updateTotalConsoSum(_eachConso = '.cmd.consoTotY', _divConso = 'totalYesterday'/* _divConsoSum = ".consoSumY", _day = "{{hier}}"*/) {
+    function updateTotalConsoSum(_eachConso = '.cmd.consoTotY', _divConso = 'totalYesterday') {
         var totalConso = 0;
         var eachConso = document.querySelectorAll(_eachConso);
         eachConso.forEach(function(a) {
@@ -126,27 +151,32 @@
         }
         // Met à jour le contenu du div avec la somme calculée
         var totalConsoSum = document.querySelector(_eachConso + '[data-action=' + _divConso + ']');
-        totalConsoSum.innerHTML = totalConso.toFixed(2) + ' ' + totalConsoUnit;
+        if (totalConsoSum) {
+            totalConsoSum.innerHTML = totalConso.toFixed(2) + ' ' + totalConsoUnit;
+        }
     }
 
     function updateTotalConsoPourcent() {
         var consoYesterday = parseFloat(document.querySelector('.cmd.consoTotY[data-action="totalYesterday"]').innerText);
         var consoToday = parseFloat(document.querySelector('.cmd.consoTotT[data-action="totalDay"]').innerText);
         var consoSumPourcent = (100 * consoToday / consoYesterday) - 100;
-        var spanConsoSumPourcent = document.querySelector('.consoTotPourcent[data-action="sum"]');
         var posConsoSumPourcent = consoSumPourcent > 0 ? '+' + consoSumPourcent.toFixed(2) : consoSumPourcent.toFixed(2);
-        spanConsoSumPourcent.innerHTML = "<span class='label' style='background-color:"+getColorForPourcentage(consoSumPourcent)+" !important;'>" + posConsoSumPourcent + " %</span>";
-
+        var spanConsoSumPourcent = document.querySelector('.consoTotPourcent[data-action="sum"]');
+        if (spanConsoSumPourcent) {
+            spanConsoSumPourcent.innerHTML = "<span class='label' style='background-color:"+getColorForPourcentage(consoSumPourcent)+" !important;'>" + posConsoSumPourcent + " %</span>";
+        }
     }
 
     function updateLinkyConsoPourcent() {
         var consoYesterday = parseFloat(document.querySelector('.consoTotY[data-linky="1"]').innerText);
         var consoToday = parseFloat(document.querySelector('.consoTotT[data-linky="1"]').innerText);
         var consoLinkyPourcent = (100 * consoToday / consoYesterday) - 100;
-        var spanConsoLinkyPourcent = document.querySelector('.consoTotPourcent[data-linky="1"]');
         var posConsoLinkyPourcent = consoLinkyPourcent > 0 ? '+' + consoLinkyPourcent.toFixed(2) : consoLinkyPourcent.toFixed(2);
-        spanConsoLinkyPourcent.innerHTML = posConsoLinkyPourcent + ' %';
-        spanConsoLinkyPourcent.style.backgroundColor = getColorForPourcentage(consoLinkyPourcent) + ' !important';
+        var spanConsoLinkyPourcent = document.querySelector('.consoTotPourcent[data-linky="1"]');
+        if (spanConsoLinkyPourcent) {
+            spanConsoLinkyPourcent.innerHTML = posConsoLinkyPourcent + ' %';
+            spanConsoLinkyPourcent.style.backgroundColor = getColorForPourcentage(consoLinkyPourcent) + ' !important';
+        }
     }
 
     $(document).ready(function() {
@@ -154,7 +184,7 @@
         var powerElements = document.querySelectorAll(".cmd.power");
         if (powerElements) {
             powerElements.forEach(function (element) {
-                var cmdId = element.getAttribute("data-cmd_id");
+                var cmdId = element.getAttribute('data-cmd_id');
                 jeedom.cmd.addUpdateFunction(cmdId, function (_options) {
                     element.setAttribute('title', '{{Date de collecte : }}' + _options.collectDate + '<br/>{{Date de valeur : }}' + _options.valueDate);
                     if ((_options.unit === 'Wh' || _options.unit === 'W') && _options.display_value > 1000 ) {
@@ -162,12 +192,14 @@
                         _options.unit = 'k' + _options.unit;
                     }
                     element.textContent = _options.display_value + " " + _options.unit;
+                    updateTendanceClass(element); // Met à jour la couleur des badge des puissances
                     updateTableSort();
                     updateTotalPowerSum(); // Met à jour la somme des puissances
-                    updateTotalConsoSum('.cmd.consoTotT','totalDay'/* ".consoSumY", "{{hier}}"*/); // Met à jour la somme des conso d'hier
-                    updateTotalConsoSum('.cmd.consoTotY','totalYesterday'/*".cmd.consoTotT", ".consoSumT", "{{du jour}}"*/); // Met à jour la somme des conso du jour
+                    updateTotalConsoSum('.cmd.consoTotT','totalDay'); // Met à jour la somme des conso d'hier
+                    updateTotalConsoSum('.cmd.consoTotY','totalYesterday'); // Met à jour la somme des conso du jour
                     updateTotalConsoPourcent(); // Met à jour le pourcentage de conso d'hier/aujourdhui
                 });
+                updateTendanceClass(element); // Met à jour la couleur des badge des puissances
             });
         }
 
@@ -186,8 +218,8 @@
 
         sortIotawattTable(); // Initialisez le tri de la table
         updateTotalPowerSum(); // Mettez à jour la somme initiale
-        updateTotalConsoSum('.cmd.consoTotT','totalDay'/*".cmd.consoTotY", ".consoSumY", "{{hier}}"*/); // Met à jour la somme des conso d'hier
-        updateTotalConsoSum('.cmd.consoTotY','totalYesterday'/*".cmd.consoTotT", ".consoSumT", "{{du jour}}"*/); // Met à jour la somme des conso du jour
+        updateTotalConsoSum('.cmd.consoTotT','totalDay'); // Met à jour la somme des conso d'hier
+        updateTotalConsoSum('.cmd.consoTotY','totalYesterday'); // Met à jour la somme des conso du jour
         updateTotalConsoPourcent(); // Met à jour le pourcentage de conso d'hier/aujourdhui
 
         var table = document.getElementById("table_poweriotawatt");
@@ -235,7 +267,7 @@
                         dateStart: yesterdayMidnight,
                         dateEnd: todayMidnight,
                         success: function(result) {
-                          document.querySelector('.consoTotY[data-linky="1"]').innerHTML = (result.maxValue - result.minValue).toFixed(2) + ' ' + result.unite;
+                            totalConsoLinky.innerHTML = (result.maxValue - result.minValue).toFixed(2) + ' ' + result.unite;
                         }
                     });
                     jeedom.history.get({ // historique d'aujourd'hui
@@ -243,7 +275,7 @@
                         dateStart: todayMidnight,
                         dateEnd: currentDate,
                         success: function(result) {
-                          document.querySelector('.consoTotT[data-linky="1"]').innerHTML = (result.maxValue - result.minValue).toFixed(2) + ' ' + result.unite;
+                          document.querySelector('.cmd.consoTotT[data-linky="1"]').innerHTML = (result.maxValue - result.minValue).toFixed(2) + ' ' + result.unite;
                           updateLinkyConsoPourcent(); // Met à jour le pourcentage de conso d'hier/aujourdhui
                         }
                     });

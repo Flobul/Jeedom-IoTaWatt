@@ -22,18 +22,11 @@ $eqLogics = iotawatt::byType('iotawatt');
 $historyCalculTendanceThresholddMax = config::byKey('historyCalculTendanceThresholddMax');
 $historyCalculTendanceThresholddMin = config::byKey('historyCalculTendanceThresholddMin');
 $logo = array(
-    'arrowUp' => '<i class="fas fa-arrow-up"></i>',
-    'arrowDown' => '<i class="fas fa-arrow-down"></i>',
-    'minus' => '<i class="fas fa-minus"></i>'
+    'arrowUp'   => '<i class="fas fa-arrow-up icon_red"></i>',
+    'arrowDown' => '<i class="fas fa-arrow-down icon_green"></i>',
+    'minus'     => '<i class="fas fa-minus icon_blue"></i>'
 );
 
-function getColorForTendance($tendance) {
-    $tendance = max(-1.0, min(1.0, $tendance));
-    $hue = 120 * (1 - $tendance);
-    $hue = max(0, min(120, $hue));
-    $color = "hsl(" . $hue . ", 100%, 30%)";
-    return $color;
-}
 function getColorForPourcentage($pourcent) {
     if (is_nan($pourcent)) {
         return "hsl(0, 0%, 50%)";
@@ -92,13 +85,28 @@ function getColorForPourcentage($pourcent) {
         border: 1px solid silver;
         border-radius: 0.25em;
     }
-    .cmd.power[data-action="powerSum"],
     .cmd.consoTotY[data-action="totalYesterday"],
     .cmd.consoTotY[data-linky="1"],
     .floatRight,
     .namePowerConso[data-total="1"],
     .cmd.power[data-linky="1"] {
         float: right;
+    }
+    .redTendance {
+        background-color: var(--al-danger-color) !important;
+    }
+    .blueTendance {
+        background-color: var(--al-info-color) !important;
+    }
+    .greenTendance {
+        background-color: var(--bt-success-color) !important;
+    }
+    .cmd.power[data-action="powerSum"] {
+        float: right;
+        background-color: black!important;
+        color: white!important;
+        font-size: 1.5em !important;
+        font-weight: bolder;
     }
 </style>
 <table class="table table-condensed tablesorter" id="table_poweriotawatt">
@@ -236,15 +244,15 @@ function getColorForPourcentage($pourcent) {
             echo '  </td>';
 
             echo '  <td>';
-            if ($value['powerId'] == '') {
-                echo '    <div class="cmd label cursor history power" style="background-color:' . getColorForTendance($value['powerTendance']) . ' !important;" data-action="powerSum">' . $value['power'] . ' ' . $value['powerUnit'] . '</div> ';
+            if ($value['powerId'] == '') { // TOTAL
+                echo '    <div class="cmd label label-info cursor history power" data-action="powerSum">' . $value['power'] . ' ' . $value['powerUnit'] . '</div> ';
             } else {
                 if ($value['isLinky']) {
                     echo '<span class="floatRight">' . $logoTendancePower . '</span>';
                 }
                 $logoTendancePower = ($value['powerTendance'] > $historyCalculTendanceThresholddMax) ? $logo['arrowUp'] :
                                  (($value['powerTendance'] < $historyCalculTendanceThresholddMin) ? $logo['arrowDown'] : $logo['minus']);
-                echo '    <div class="cmd label cursor history power" style="background-color:' . getColorForTendance($value['powerTendance']) . ' !important;" data-linky="'.$value['isLinky'].'" data-cmd_id="' . $value['powerId'] . '" title="{{Date de collecte : }}' . $value['powerCollectDate'] . '<br/>{{Date de valeur : }} ' . $value['powerValueDate'] . '">' . $value['power'] . ' ' . $value['powerUnit'] . '</div> ';
+                echo '    <div class="cmd label cursor history power" data-linky="'.$value['isLinky'].'" data-cmd_id="' . $value['powerId'] . '" title="{{Date de collecte : }}' . $value['powerCollectDate'] . '<br/>{{Date de valeur : }} ' . $value['powerValueDate'] . '">' . $value['power'] . ' ' . $value['powerUnit'] . '</div> ';
                 if (!$value['isLinky']) {
                     echo $logoTendancePower;
                 }
@@ -262,17 +270,17 @@ function getColorForPourcentage($pourcent) {
             echo '  </td>';*/
 
             echo '  <td>';
-            if ($value['consoId'] == '') {
+            if ($value['consoId'] == '') { // TOTAL
                 echo '    <div class="cmd label label-info consoTotY" data-action="totalYesterday"></div>';
             } else {
                 $consoYesterday = ($value['consoStats']['max'] - $value['consoStats']['min']);
                 $valueInfoYest = cmd::autoValueArray($consoYesterday, 2, $value['consoOldUnit']);
-                echo '    <div class="cmd label label-info consoTotY" data-linky="'.$value['isLinky'].'" data-cmd_id="' . $value['consoId'] . '">' . $valueInfoYest[0] . ' ' . $valueInfoYest[1] . '</div>';
+                echo '    <div class="cmd label label-info cursor history consoTotY" data-linky="'.$value['isLinky'].'" data-cmd_id="' . $value['consoId'] . '">' . $valueInfoYest[0] . ' ' . $valueInfoYest[1] . '</div>';
             }
             echo '  </td>';
 
             echo '  <td>';
-            if ($value['consoId'] == '') {
+            if ($value['consoId'] == '') { // TOTAL
                 echo '    <div class="cmd label label-info consoTotT" data-action="totalDay"></div>';
                 echo '    <div class="cmd label consoTotPourcent" data-action="sum"></div>';
             } else {
