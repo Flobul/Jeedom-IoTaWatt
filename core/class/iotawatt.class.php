@@ -32,7 +32,7 @@ class iotawatt extends eqLogic
      * Version du plugin.
      * @var string
      */
-    public static $_pluginVersion = '0.90';
+    public static $_pluginVersion = '0.92';
 
     public const HANDLESTATUS          = '/status';
     public const HANDLEVCAL            = '/vcal';
@@ -553,7 +553,7 @@ class iotawatt extends eqLogic
                 'decimals' => 0
             )
         );
-        return isset($array[$_unit]) ? ($_param == 'all' ? $array[$_unit] : $array[$_unit][$_param]) : null;
+        return isset($array[$_unit]) ? ($_param == 'all' ? $array[$_unit] : (isset($array[$_unit][$_param]) ? $array[$_unit][$_param] : null)) : null;
     }
 
     /**
@@ -845,7 +845,7 @@ class iotawatt extends eqLogic
                 $nb = 0;
                 $nbUpdated = 0;
                 $datasDate = date('Y-m-d H:i:s', $datas[0]);
-                $resultat = array_map(function($elem) use ($datas, &$nb, &$nbUpdated) {
+                $resultat = array_map(function($elem) use ($datas, &$nb, &$nbUpdated, $datasDate) {
                     $key = key($elem);
                     $value = current($elem);
                     $cmdInfo = $this->getCmd('info', $key);
@@ -926,10 +926,10 @@ class iotawatt extends eqLogic
                 //echo $matches[1]; // affiche "inconnu2A"
                 //supprimer commande ?
             }
+            log::add(__CLASS__, 'debug', __FUNCTION__ . ' : ' . __('fin  (false)', __FILE__) . json_encode($response));
         } catch (Exception $e) {
             log::add(__CLASS__, 'debug', "L." . __LINE__ . " F." . __FUNCTION__ . __(" Erreur de connexion : ", __FILE__) . json_encode(utils::o2a($e)));
         }
-        log::add(__CLASS__, 'debug', __FUNCTION__ . ' : ' . __('fin  (false)', __FILE__) . json_encode($response));
         return false;
     }
 
