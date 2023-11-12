@@ -641,13 +641,13 @@ class iotawatt extends eqLogic
                         $cmdInput->event(round(floatval($_status['inputs'][$i][$unit]),2), $dataDate);
                     }
                 }
-                if ($_status['inputs'][$i]['Hz']) {
+                if (isset($_status['inputs'][$i]['Hz'])) {
                     $cmdHz = $this->getCmd('info', 'input_' . $_status['inputs'][$i]['channel'] . '_Hz');
                     if (is_object($cmdHz)) {
                         $cmdHz->event(round(floatval($_status['inputs'][$i]['Hz']),2), $dataDate);
                     }
                 }
-                if ($_status['inputs'][$i]['Pf']) {
+                if (isset($_status['inputs'][$i]['Pf'])) {
                     $cmdPf = $this->getCmd('info', 'input_' . $_status['inputs'][$i]['channel'] . '_PF');
                     if (is_object($cmdPf)) {
                         $cmdPf->event(round(floatval($_status['inputs'][$i]['Pf']),2), $dataDate);
