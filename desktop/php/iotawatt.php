@@ -37,6 +37,7 @@ $eqLogics = eqLogic::byType($plugin->getId());
           iotawatt_display::displayActionCard('{{Ajouter}}', 'fa-plus-circle', 'data-action="add"', 'logoPrimary');
           iotawatt_display::displayActionCard('{{Configuration}}', 'fa-wrench', 'data-action="gotoPluginConf"', 'logoSecondary');
           iotawatt_display::displayActionCard('{{Puissances}}', 'icon kiko-electricity', 'id="bt_poweriotawatt"', 'logoSecondary');
+          iotawatt_display::displayActionCard('{{Graphiques}}', 'fa-chart-bar', 'id="bt_chartiotawatt"', 'logoSecondary');
           iotawatt_display::displayActionCard('{{Santé}}', 'fa-medkit', 'id="bt_healthiotawatt"', 'logoSecondary');
           iotawatt_display::displayActionCard('{{Documentation}}', 'fa-book-reader', 'id="bt_documentationiotawatt" data-location="' . $plugin->getDocumentation() . '"', 'logoSecondary');
         ?>

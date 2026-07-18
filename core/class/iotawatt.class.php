@@ -195,13 +195,13 @@ class iotawatt extends eqLogic
     public static function update()
     {
         log::add(__CLASS__, 'debug', __FUNCTION__ . ' : ' . __('début', __FILE__));
-        $autorefresh = config::byKey('autorefresh', 'iotawatt', '');
+        $autorefresh = config::byKey('autorefresh', __CLASS__, 'never');
         if ($autorefresh != '') {
             try {
                 $c = new Cron\CronExpression($autorefresh, new Cron\FieldFactory);
                 if ($c->isDue()) {
                     try {
-                        foreach (eqLogic::byType('iotawatt', true) as $iotawatt) {
+                        foreach (eqLogic::byType(__CLASS__, true) as $iotawatt) {
                             if (count($iotawatt->getCmd('info')) == 0) {
                                 $iotawatt->setStatus('lastValueUpdate', 0);
                             }
@@ -209,11 +209,11 @@ class iotawatt extends eqLogic
                             $iotawatt->getSensors();
                         }
                     } catch (Exception $exc) {
-                        log::add('iotawatt', 'error', __('Erreur : ', __FILE__) . $exc->getMessage());
+                        log::add(__CLASS__, 'error', __('Erreur : ', __FILE__) . $exc->getMessage());
                     }
                 }
             } catch (Exception $exc) {
-                log::add('iotawatt', 'error', __('Expression cron non valide : ', __FILE__) . $autorefresh);
+                log::add(__CLASS__, 'error', __('Expression cron non valide : ', __FILE__) . $autorefresh);
             }
         }
         log::add(__CLASS__, 'debug', __FUNCTION__ . ' : ' . __('fin', __FILE__));
@@ -228,23 +228,23 @@ class iotawatt extends eqLogic
     public static function cronDayly()
     {
         log::add(__CLASS__, 'debug', __FUNCTION__ . ' : ' . __('début', __FILE__));
-        $autorefresh = config::byKey('autorefresh', 'iotawatt', '');
+        $autorefresh = config::byKey('autorefresh', __CLASS__, 'never');
         if ($autorefresh != '') {
             try {
                 $c = new Cron\CronExpression($autorefresh, new Cron\FieldFactory);
                 if ($c->isDue()) {
                     try {
-                        foreach (eqLogic::byType('iotawatt', true) as $iotawatt) {
+                        foreach (eqLogic::byType(__CLASS__, true) as $iotawatt) {
                             $iotawatt->getSeries();
                             $iotawatt->updateStatus($iotawatt->getIotaWattStatus(array('passwords' => true, 'stats' => true, 'wifi' => true, 'device' => true)));
                             $iotawatt->save();
                         }
                     } catch (Exception $exc) {
-                        log::add('iotawatt', 'error', __('Erreur : ', __FILE__) . $exc->getMessage());
+                        log::add(__CLASS__, 'error', __('Erreur : ', __FILE__) . $exc->getMessage());
                     }
                 }
             } catch (Exception $exc) {
-                log::add('iotawatt', 'error', __('Expression cron non valide : ', __FILE__) . $autorefresh);
+                log::add(__CLASS__, 'error', __('Expression cron non valide : ', __FILE__) . $autorefresh);
             }
         }
         log::add(__CLASS__, 'debug', __FUNCTION__ . ' : ' . __('fin', __FILE__));
@@ -257,7 +257,7 @@ class iotawatt extends eqLogic
      */
     public static function deamon_info() {
         $return = array();
-        $return['log'] = 'iotawatt';
+        $return['log'] = __CLASS__;
         $return['state'] = 'nok';
         $pid = trim(shell_exec('ps ax | grep "/iotawattd.php" | grep -v "grep" | wc -l'));
         if ($pid != '' && $pid != '0') {
@@ -285,12 +285,12 @@ class iotawatt extends eqLogic
             self::deamon_stop();
             sleep(2);
         }
-        log::add('iotawatt', 'info', __('Lancement du démon iotawatt', __FILE__));
+        log::add(__CLASS__, 'info', __('Lancement du démon iotawatt', __FILE__));
         $cmd = substr(dirname(__FILE__),0,strpos (dirname(__FILE__),'/core/class')).'/resources/iotawattd.php';
-        log::add('iotawatt', 'debug', __('Commande du Deamon : ', __FILE__) . $cmd);
+        log::add(__CLASS__, 'debug', __('Commande du Deamon : ', __FILE__) . $cmd);
         $result = exec('sudo php ' . $cmd . ' >> ' . log::getPathToLog('iotawattd') . ' 2>&1 &');
         if (strpos(strtolower($result), 'error') !== false || strpos(strtolower($result), 'traceback') !== false) {
-            log::add('iotawatt', 'error', 'Deamon error : ' . $result);
+            log::add(__CLASS__, 'error', 'Deamon error : ' . $result);
             return false;
         }
         sleep(1);
@@ -304,10 +304,10 @@ class iotawatt extends eqLogic
             $i++;
         }
         if ($i >= 30) {
-            log::add('iotawatt', 'error', 'Impossible de lancer le démon iotawattd', 'unableStartDeamon');
+            log::add(__CLASS__, 'error', 'Impossible de lancer le démon iotawattd', 'unableStartDeamon');
             return false;
         }
-        log::add('iotawatt', 'info', __('Démon iotawattd lancé', __FILE__));
+        log::add(__CLASS__, 'info', __('Démon iotawattd lancé', __FILE__));
         return true;
     }
 
@@ -318,7 +318,7 @@ class iotawatt extends eqLogic
      * @throws Exception Lève une exception si la configuration est invalide.
      */
     public static function deamon_stop() {
-        log::add('iotawatt', 'info', __('Arrêt du service iotawatt', __FILE__));
+        log::add(__CLASS__, 'info', __('Arrêt du service iotawatt', __FILE__));
         $cmd = '/iotawattd.php';
         exec('sudo kill -9 $(ps aux | grep "'.$cmd.'" | awk \'{print $2}\')');
         sleep(1);
@@ -982,6 +982,613 @@ class iotawatt extends eqLogic
         return 'plugins/iotawatt/plugin_info/iotawatt_icon.png';
     }
 
+    /**
+     * Génère le code HTML pour afficher l'équipement sur le dashboard.
+     * Utilise le template personnalisé si l'option widgetTemplate est activée.
+     * 
+     * @param string $_version Version du template (dashboard ou mobile)
+     * @return string Le code HTML généré
+     */
+    public function toHtml($_version = 'dashboard')
+    {
+        $startTime = microtime(true);
+        log::add(__CLASS__, 'debug', '[toHtml] Début génération HTML pour équipement #' . $this->getId());
+        
+        // Si le widget personnalisé n'est pas activé, utiliser le widget par défaut
+        if ($this->getConfiguration('widgetTemplate', false) == false) {
+            return parent::toHtml($_version);
+        }
+
+        $replace = $this->preToHtml($_version);
+        if (!is_array($replace)) {
+            return $replace;
+        }
+        
+        $_version = jeedom::versionAlias($_version);
+
+        // Informations de configuration de l'équipement
+        $replace['#mac_value#'] = $this->getConfiguration('mac', '');
+        $replace['#firmwareVersion_value#'] = $this->getConfiguration('firmwareVersion', '');
+        $replace['#SSID_value#'] = $this->getConfiguration('SSID', '');
+        $rssi = $this->getStatus('RSSI', '');
+        $replace['#RSSI_value#'] = $rssi;
+        
+        // RSSI indicator
+        $rssiIndicator = $rssi > -50 ? 'good' : ($rssi > -70 ? 'warning' : 'error');
+        $replace['#RSSI_display#'] = '<span class="iotawatt-stat-indicator' . $this->getId() . ' iotawatt-stat-' . $rssiIndicator . $this->getId() . '">' . $rssi . ' dBm</span>';
+        
+        $replace['#nbInputs_value#'] = $this->getConfiguration('nbInputs', '0');
+        $replace['#nbOutputs_value#'] = $this->getConfiguration('nbOutputs', '0');
+        
+        // Uptime calculation
+        $runSeconds = $this->getConfiguration('runSeconds', '0');
+        $replace['#runSeconds_value#'] = $runSeconds;
+        if ($runSeconds > 0) {
+            $days = floor($runSeconds / 86400);
+            $hours = floor(($runSeconds % 86400) / 3600);
+            $minutes = floor(($runSeconds % 3600) / 60);
+            $replace['#uptime_display#'] = $days . 'j ' . $hours . 'h ' . $minutes . 'm';
+        } else {
+            $replace['#uptime_display#'] = '-';
+        }
+        
+        $replace['#startTime_value#'] = $this->getConfiguration('startTime', '');
+
+        $groupStartTime = microtime(true);
+        log::add(__CLASS__, 'debug', '[toHtml] Groupement des commandes...');
+        
+        // Group commands by type
+        $inputs = array();
+        $outputs = array();
+        $totalPower = 0;
+        $totalWh = 0;
+        
+        foreach ($this->getCmd('info', null) as $cmd) {
+            $replace['#cmd_' . $cmd->getLogicalId() . '_id#'] = $cmd->getId();
+            $replace['#cmd_' . $cmd->getLogicalId() . '_name#'] = $cmd->getName();
+            $replace['#cmd_' . $cmd->getLogicalId() . '_value#'] = $cmd->execCmd();
+            $replace['#cmd_' . $cmd->getLogicalId() . '_unit#'] = $cmd->getUnite();
+            $replace['#cmd_' . $cmd->getLogicalId() . '_historized#'] = $cmd->getIsHistorized();
+            $replace['#cmd_' . $cmd->getLogicalId() . '_collectDate#'] = $cmd->getCollectDate();
+            $replace['#cmd_' . $cmd->getLogicalId() . '_valueDate#'] = $cmd->getValueDate();
+            
+            $type = $cmd->getConfiguration('type');
+            $channel = $cmd->getConfiguration('channel');
+            $serie = $cmd->getConfiguration('serie');
+            $valueType = $cmd->getConfiguration('valueType');
+            
+            if ($type == 'input') {
+                if (!isset($inputs[$channel])) {
+                    // Utiliser le nom de la commande et nettoyer les mots "Puissance " et "Consommation "
+                    $cmdName = $cmd->getName();
+                    $cmdName = str_replace(array('Puissance ', 'Consommation '), '', $cmdName);
+                    
+                    $inputs[$channel] = array(
+                        'channel' => $channel,
+                        'name' => $cmdName,
+                        'values' => array()
+                    );
+                }
+                $inputs[$channel]['values'][$valueType] = array(
+                    'id' => $cmd->getId(),
+                    'value' => $cmd->execCmd(),
+                    'unit' => $cmd->getUnite()
+                );
+                
+                // Calculate statistics
+                if ($valueType == 'Watts') {
+                    $totalPower += floatval($cmd->execCmd());
+                } elseif ($valueType == 'Wh') {
+                    $totalWh += floatval($cmd->execCmd());
+                }
+            } elseif ($type == 'output') {
+                if (!isset($outputs[$serie])) {
+                    // Utiliser le nom de la commande et nettoyer les mots "Puissance " et "Consommation "
+                    $cmdName = $cmd->getName();
+                    $cmdName = str_replace(array('Puissance ', 'Consommation '), '', $cmdName);
+                    
+                    $outputs[$serie] = array(
+                        'name' => $cmdName,
+                        'channel' => $serie,
+                        'values' => array()
+                    );
+                }
+                $outputs[$serie]['values'][$valueType] = array(
+                    'id' => $cmd->getId(),
+                    'value' => $cmd->execCmd(),
+                    'unit' => $cmd->getUnite()
+                );
+            }
+        }
+        
+        log::add(__CLASS__, 'debug', '[toHtml] Groupement terminé en ' . round((microtime(true) - $groupStartTime) * 1000, 2) . 'ms - ' . count($inputs) . ' inputs, ' . count($outputs) . ' outputs');
+        
+        // Sort inputs by channel
+        ksort($inputs);
+        
+        $htmlStartTime = microtime(true);
+        log::add(__CLASS__, 'debug', '[toHtml] Génération HTML des entrées...');
+        
+        // Generate inputs HTML
+        $inputsHTML = '<h4 style="color: var(--txt-color); margin: 8px 0 5px 0; font-size: 12px;"><i class="fas fa-plug"></i> ' . __('Entrées', __FILE__) . '</h4>';
+        
+        $labelMap = array(
+            'Watts' => __('Puissance', __FILE__),
+            'Wh' => __('Consommation', __FILE__),
+            'Volts' => __('Tension', __FILE__),
+            'Amps' => __('Intensité', __FILE__),
+            'Hz' => __('Fréquence', __FILE__),
+            'PF' => __('Facteur de puissance', __FILE__)
+        );
+        
+        foreach ($inputs as $input) {
+            // Séparer les valeurs principales (Watts et Wh) des autres
+            $wattsData = isset($input['values']['Watts']) ? $input['values']['Watts'] : null;
+            $whData = isset($input['values']['Wh']) ? $input['values']['Wh'] : null;
+            
+            // Vérifier la visibilité des commandes
+            $wattsVisible = false;
+            $whVisible = false;
+            
+            if ($wattsData) {
+                $cmdWatts = cmd::byId($wattsData['id']);
+                $wattsVisible = is_object($cmdWatts) ? $cmdWatts->getIsVisible() : true;
+            }
+            
+            if ($whData) {
+                $cmdWh = cmd::byId($whData['id']);
+                $whVisible = is_object($cmdWh) ? $cmdWh->getIsVisible() : true;
+            }
+            
+            // Si les deux commandes principales sont invisibles, ne pas afficher la tuile
+            if (!$wattsVisible && !$whVisible) {
+                log::add(__CLASS__, 'debug', '[toHtml] Input ' . $input['channel'] . ' caché (Watts et Wh invisibles)');
+                continue;
+            }
+            
+            $inputsHTML .= '<div class="iotawatt-input-card' . $this->getId() . '">';
+            $inputsHTML .= '<div class="iotawatt-input-header' . $this->getId() . '">';
+            
+            // Gestion de l'affichage du nom et de l'icône
+            $showName = $this->getConfiguration('showNameOndashboard', 1);
+            $showIconAndName = $this->getConfiguration('showIconAndNamedashboard', 0);
+            
+            if ($showIconAndName) {
+                // Afficher icône + nom
+                $inputsHTML .= '<span class="iotawatt-input-name' . $this->getId() . '">';
+                $inputsHTML .= '<i class="fas fa-plug" style="margin-right: 3px;"></i>';
+                $inputsHTML .= ($input['name'] ?: 'Input ' . $input['channel']);
+                $inputsHTML .= '</span>';
+            } elseif ($showName) {
+                // Afficher uniquement le nom
+                $inputsHTML .= '<span class="iotawatt-input-name' . $this->getId() . '">' . ($input['name'] ?: 'Input ' . $input['channel']) . '</span>';
+            }
+            
+            $inputsHTML .= '<span class="iotawatt-input-channel' . $this->getId() . '">CH ' . $input['channel'] . '</span>';
+            $inputsHTML .= '</div>';
+            
+            $otherValues = array();
+            
+            foreach ($input['values'] as $valueType => $data) {
+                if ($valueType != 'Watts' && $valueType != 'Wh') {
+                    $otherValues[$valueType] = $data;
+                }
+            }
+            
+            // Ligne principale : Puissance et Consommation
+            $inputsHTML .= '<div class="iotawatt-main-line' . $this->getId() . '">';
+            
+            // Puissance (Watts) - Afficher seulement si visible
+            if ($wattsData && $wattsVisible) {
+                $cmdObj = cmd::byId($wattsData['id']);
+                $collectDate = is_object($cmdObj) ? $cmdObj->getCollectDate() : '';
+                $valueDate = is_object($cmdObj) ? $cmdObj->getValueDate() : '';
+                $tooltip = '{{Date de collecte :}} ' . $collectDate . '<br>{{Date de valeur :}} ' . $valueDate;
+                
+                // Vérifier les options d'affichage de la commande elle-même
+                $cmdShowName = is_object($cmdObj) ? $cmdObj->getDisplay('showNameOndashboard', 1) : 1;
+                $cmdShowStats = is_object($cmdObj) ? $cmdObj->getDisplay('showStatsOndashboard', 1) : 1;
+                
+                $tendanceIcon = '';
+                if ($cmdShowStats && is_object($cmdObj) && $cmdObj->getIsHistorized()) {
+                    $startHist = date('Y-m-d H:i:s', strtotime('-1 hour'));
+                    $tendance = $cmdObj->getTendance($startHist, date('Y-m-d H:i:s'));
+                    
+                    $thresholdMax = config::byKey('historyCalculTendanceThresholddMax', 'core', 0.1);
+                    $thresholdMin = config::byKey('historyCalculTendanceThresholddMin', 'core', -0.1);
+                    
+                    if ($tendance > $thresholdMax) {
+                        $tendanceIcon = '<i class="fas fa-arrow-up" style="color: #F44336; font-size: 9px;"></i>';
+                    } elseif ($tendance < $thresholdMin) {
+                        $tendanceIcon = '<i class="fas fa-arrow-down" style="color: #4CAF50; font-size: 9px;"></i>';
+                    } else {
+                        $tendanceIcon = '<i class="fas fa-minus" style="color: #888; font-size: 9px;"></i>';
+                    }
+                }
+                
+                // Garder les Watts en W
+                $unit = $wattsData['unit'];
+                $value = floatval($wattsData['value']);
+                
+                $inputsHTML .= '<div class="iotawatt-main-value' . $this->getId() . '">';
+                
+                // Afficher le label seulement si showNameOndashboard est activé
+                if ($cmdShowName) {
+                    $inputsHTML .= '<span class="iotawatt-main-label' . $this->getId() . '">Puissance</span>';
+                }
+                
+                $inputsHTML .= '<span class="iotawatt-main-number' . $this->getId() . ' cursor cmd history" ';
+                $inputsHTML .= 'data-cmd_id="' . $wattsData['id'] . '" ';
+                $inputsHTML .= 'title="' . htmlspecialchars($tooltip) . '">';
+                $inputsHTML .= number_format($value, 0, '.', '') . ' <span class="unit' . $this->getId() . '">' . $unit . '</span>';
+                if ($tendanceIcon) {
+                    $inputsHTML .= ' <span class="iotawatt-tendance' . $this->getId() . '" data-cmd_id="' . $wattsData['id'] . '">' . $tendanceIcon . '</span>';
+                }
+                $inputsHTML .= '</span>';
+                $inputsHTML .= '</div>';
+            }
+            
+            // Consommation (Wh) avec duets - Afficher seulement si visible
+            if ($whData && $whVisible) {
+                $cmdObj = cmd::byId($whData['id']);
+                $collectDate = is_object($cmdObj) ? $cmdObj->getCollectDate() : '';
+                $valueDate = is_object($cmdObj) ? $cmdObj->getValueDate() : '';
+                $tooltip = '{{Date de collecte :}} ' . $collectDate . '<br>{{Date de valeur :}} ' . $valueDate;
+                
+                // Vérifier les options d'affichage de la commande
+                $cmdShowName = is_object($cmdObj) ? $cmdObj->getDisplay('showNameOndashboard', 1) : 1;
+                
+                // Convertir en kWh
+                $unit = $whData['unit'];
+                $currentValue = floatval($whData['value']);
+                if ($unit == 'Wh') {
+                    $currentValue = $currentValue / 1000;
+                    $unit = 'kWh';
+                }
+                
+                $yesterdayValue = 0;
+                $todayValue = 0;
+                $lastMonthValue = 0;
+                $lastYearValue = 0;
+                
+                // OPTIMISATION RADICALE : NE PAS calculer les stats au chargement initial
+                // Les données seront chargées à la demande après l'affichage de la page
+                // Cela réduit le temps de chargement de 38 secondes à < 1 seconde !
+                log::add(__CLASS__, 'debug', '[toHtml] Stats pour cmd #' . $whData['id'] . ' - chargement différé (pas de calcul)');
+                
+                // Calcul des pourcentages (tous à 0 car pas de données)
+                $percentDay = 0;
+                $percentMonth = 0;
+                $percentYear = 0;
+                
+                $inputsHTML .= '<div class="iotawatt-main-value' . $this->getId() . '">';
+                
+                // Afficher le label seulement si showNameOndashboard est activé
+                if ($cmdShowName) {
+                    $inputsHTML .= '<span class="iotawatt-main-label' . $this->getId() . '">Consommation</span>';
+                }
+                
+                $inputsHTML .= '<div class="iotawatt-duet-content' . $this->getId() . '">';
+                
+                // Day period (default) - Données à charger
+                $inputsHTML .= '<div class="iotawatt-duet-period' . $this->getId() . '" data-period="day" data-cmd-id="' . $whData['id'] . '">';
+                $inputsHTML .= '<span class="iotawatt-main-number' . $this->getId() . ' cursor cmd history" ';
+                $inputsHTML .= 'data-cmd_id="' . $whData['id'] . '" ';
+                $inputsHTML .= 'title="{{Chargement...}}">';
+                $inputsHTML .= '<i class="fas fa-spinner fa-spin"></i> <span class="unit' . $this->getId() . '">' . $unit . '</span>';
+                $inputsHTML .= '</span>';
+                $inputsHTML .= '<span class="iotawatt-duet-percent' . $this->getId() . '" style="color: var(--txt-color);">';
+                $inputsHTML .= '...';
+                $inputsHTML .= '</span>';
+                $inputsHTML .= '</div>';
+                
+                // Month period - Données chargées à la demande
+                $inputsHTML .= '<div class="iotawatt-duet-period' . $this->getId() . '" data-period="month" data-cmd-id="' . $whData['id'] . '" style="display: none;">';
+                $inputsHTML .= '<span class="iotawatt-main-number' . $this->getId() . '">';
+                $inputsHTML .= '<i class="fas fa-spinner fa-spin"></i> <span class="unit' . $this->getId() . '">' . $unit . '</span>';
+                $inputsHTML .= '</span>';
+                $inputsHTML .= '<span class="iotawatt-duet-percent' . $this->getId() . '" style="color: var(--txt-color);">';
+                $inputsHTML .= '...';
+                $inputsHTML .= '</span>';
+                $inputsHTML .= '</div>';
+                
+                // Year period - Données chargées à la demande
+                $inputsHTML .= '<div class="iotawatt-duet-period' . $this->getId() . '" data-period="year" data-cmd-id="' . $whData['id'] . '" style="display: none;">';
+                $inputsHTML .= '<span class="iotawatt-main-number' . $this->getId() . '">';
+                $inputsHTML .= '<i class="fas fa-spinner fa-spin"></i> <span class="unit' . $this->getId() . '">' . $unit . '</span>';
+                $inputsHTML .= '</span>';
+                $inputsHTML .= '<span class="iotawatt-duet-percent' . $this->getId() . '" style="color: var(--txt-color);">';
+                $inputsHTML .= '...';
+                $inputsHTML .= '</span>';
+                $inputsHTML .= '</div>';
+                
+                $inputsHTML .= '</div>';
+                $inputsHTML .= '</div>';
+            }
+            
+            $inputsHTML .= '</div>'; // fin main-line
+            
+            // Autres valeurs (Volts, Amps, Hz, PF) - affichage secondaire
+            if (count($otherValues) > 0) {
+                $inputsHTML .= '<div class="iotawatt-input-values' . $this->getId() . '">';
+                foreach ($otherValues as $valueType => $data) {
+                    $cmdObj = cmd::byId($data['id']);
+                    $collectDate = is_object($cmdObj) ? $cmdObj->getCollectDate() : '';
+                    $valueDate = is_object($cmdObj) ? $cmdObj->getValueDate() : '';
+                    $tooltip = '{{Date de collecte :}} ' . $collectDate . '<br>{{Date de valeur :}} ' . $valueDate;
+                    
+                    $label = isset($labelMap[$valueType]) ? $labelMap[$valueType] : $valueType;
+                    
+                    $inputsHTML .= '<div class="iotawatt-input-item' . $this->getId() . '">';
+                    $inputsHTML .= '<span class="iotawatt-input-item-label' . $this->getId() . '">' . $label . '</span>';
+                    $inputsHTML .= '<span class="iotawatt-input-item-value' . $this->getId() . ' cursor cmd history" ';
+                    $inputsHTML .= 'data-cmd_id="' . $data['id'] . '" ';
+                    $inputsHTML .= 'title="' . htmlspecialchars($tooltip) . '">';
+                    $inputsHTML .= number_format($data['value'], 1, '.', '') . ' <span class="unit' . $this->getId() . '">' . $data['unit'] . '</span>';
+                    $inputsHTML .= '</span>';
+                    $inputsHTML .= '</div>';
+                }
+                $inputsHTML .= '</div>';
+            }
+            
+            $inputsHTML .= '</div>'; // fin card
+        }
+        
+        log::add(__CLASS__, 'debug', '[toHtml] HTML entrées généré en ' . round((microtime(true) - $htmlStartTime) * 1000, 2) . 'ms');
+        
+        $replace['#inputs_html#'] = $inputsHTML;
+        
+        // Generate outputs HTML - Utiliser le même format de tuiles que les entrées
+        $outputsHTMLStart = microtime(true);
+        log::add(__CLASS__, 'debug', '[toHtml] Génération HTML des sorties...');
+        
+        $outputsHTML = '<h4 style="color: var(--txt-color); margin: 8px 0 5px 0; font-size: 12px;"><i class="fas fa-random"></i> ' . __('Sorties', __FILE__) . '</h4>';
+        
+        // Sort outputs by channel
+        ksort($outputs);
+        
+        foreach ($outputs as $output) {
+            // Séparer les valeurs Watts et Wh des autres
+            $wattsData = isset($output['values']['Watts']) ? $output['values']['Watts'] : null;
+            $whData = isset($output['values']['Wh']) ? $output['values']['Wh'] : null;
+            
+            // Vérifier la visibilité des commandes
+            $wattsVisible = false;
+            $whVisible = false;
+            
+            if ($wattsData) {
+                $cmdWatts = cmd::byId($wattsData['id']);
+                $wattsVisible = is_object($cmdWatts) ? $cmdWatts->getIsVisible() : true;
+            }
+            
+            if ($whData) {
+                $cmdWh = cmd::byId($whData['id']);
+                $whVisible = is_object($cmdWh) ? $cmdWh->getIsVisible() : true;
+            }
+            
+            // Si les deux commandes principales sont invisibles, ne pas afficher la tuile
+            if (!$wattsVisible && !$whVisible) {
+                log::add(__CLASS__, 'debug', '[toHtml] Output ' . $output['channel'] . ' caché (Watts et Wh invisibles)');
+                continue;
+            }
+            
+            // Collecter les autres valeurs
+            $otherValues = array();
+            foreach ($output['values'] as $valueType => $data) {
+                if ($valueType !== 'Watts' && $valueType !== 'Wh') {
+                    $otherValues[$valueType] = $data;
+                }
+            }
+            
+            // Générer la tuile (même structure que pour les inputs)
+            $outputsHTML .= '<div class="iotawatt-input-card' . $this->getId() . '">';
+            
+            // Header avec nom et numéro de sortie
+            $showName = $this->getConfiguration('showNameOndashboard', 1);
+            $showIconAndName = $this->getConfiguration('showIconAndNamedashboard', 0);
+            
+            if ($showName || $showIconAndName) {
+                $outputsHTML .= '<div class="iotawatt-input-header' . $this->getId() . '">';
+                if ($showIconAndName) {
+                    $outputsHTML .= '<span class="iotawatt-input-name' . $this->getId() . '">';
+                    $outputsHTML .= '<i class="fas fa-random"></i> ';
+                    $outputsHTML .= ($output['name'] ?: 'Output ' . $output['channel']);
+                    $outputsHTML .= '</span>';
+                } elseif ($showName) {
+                    $outputsHTML .= '<span class="iotawatt-input-name' . $this->getId() . '">';
+                    $outputsHTML .= ($output['name'] ?: 'Output ' . $output['channel']);
+                    $outputsHTML .= '</span>';
+                }
+                $outputsHTML .= '<span class="iotawatt-input-channel' . $this->getId() . '">S' . $output['channel'] . '</span>';
+                $outputsHTML .= '</div>';
+            }
+            
+            $outputsHTML .= '<div class="iotawatt-main-line' . $this->getId() . '">';
+            
+            // Puissance (Watts) - Afficher seulement si visible
+            if ($wattsData && $wattsVisible) {
+                $cmdObj = cmd::byId($wattsData['id']);
+                $collectDate = is_object($cmdObj) ? $cmdObj->getCollectDate() : '';
+                $valueDate = is_object($cmdObj) ? $cmdObj->getValueDate() : '';
+                $tooltip = '{{Date de collecte :}} ' . $collectDate . '<br>{{Date de valeur :}} ' . $valueDate;
+                
+                // Vérifier les options d'affichage de la commande
+                $cmdShowName = is_object($cmdObj) ? $cmdObj->getDisplay('showNameOndashboard', 1) : 1;
+                $cmdShowStats = is_object($cmdObj) ? $cmdObj->getDisplay('showStatsOndashboard', 1) : 1;
+                
+                $value = floatval($wattsData['value']);
+                $unit = $wattsData['unit'];
+                
+                // Calcul de tendance si activé
+                $tendanceIcon = '';
+                if ($cmdShowStats && is_object($cmdObj) && $cmdObj->getIsHistorized()) {
+                    $startHist = date('Y-m-d H:i:s', strtotime('-1 hour'));
+                    $tendance = $cmdObj->getTendance($startHist, date('Y-m-d H:i:s'));
+                    
+                    if ($tendance > 0.1) {
+                        $tendanceIcon = '<i class="fas fa-chevron-up" style="color: #F44336;"></i>';
+                    } elseif ($tendance < -0.1) {
+                        $tendanceIcon = '<i class="fas fa-chevron-down" style="color: #4CAF50;"></i>';
+                    } else {
+                        $tendanceIcon = '<i class="fas fa-minus" style="color: var(--txt-color); opacity: 0.5;"></i>';
+                    }
+                }
+                
+                $outputsHTML .= '<div class="iotawatt-main-value' . $this->getId() . '">';
+                
+                // Afficher le label seulement si showNameOndashboard est activé
+                if ($cmdShowName) {
+                    $outputsHTML .= '<span class="iotawatt-main-label' . $this->getId() . '">Puissance</span>';
+                }
+                
+                $outputsHTML .= '<span class="iotawatt-main-number' . $this->getId() . ' cursor cmd history" ';
+                $outputsHTML .= 'data-cmd_id="' . $wattsData['id'] . '" ';
+                $outputsHTML .= 'title="' . htmlspecialchars($tooltip) . '">';
+                $outputsHTML .= number_format($value, 0, '.', '') . ' <span class="unit' . $this->getId() . '">' . $unit . '</span>';
+                if ($tendanceIcon) {
+                    $outputsHTML .= ' <span class="iotawatt-tendance' . $this->getId() . '" data-cmd_id="' . $wattsData['id'] . '">' . $tendanceIcon . '</span>';
+                }
+                $outputsHTML .= '</span>';
+                $outputsHTML .= '</div>';
+            }
+            
+            // Consommation (Wh) avec duets - Afficher seulement si visible
+            if ($whData && $whVisible) {
+                $cmdObj = cmd::byId($whData['id']);
+                $collectDate = is_object($cmdObj) ? $cmdObj->getCollectDate() : '';
+                $valueDate = is_object($cmdObj) ? $cmdObj->getValueDate() : '';
+                $tooltip = '{{Date de collecte :}} ' . $collectDate . '<br>{{Date de valeur :}} ' . $valueDate;
+                
+                // Vérifier les options d'affichage de la commande
+                $cmdShowName = is_object($cmdObj) ? $cmdObj->getDisplay('showNameOndashboard', 1) : 1;
+                
+                // Convertir en kWh
+                $unit = $whData['unit'];
+                $currentValue = floatval($whData['value']);
+                if ($unit == 'Wh') {
+                    $currentValue = $currentValue / 1000;
+                    $unit = 'kWh';
+                }
+                
+                // Pas de calcul de stats au chargement
+                log::add(__CLASS__, 'debug', '[toHtml] Stats pour output cmd #' . $whData['id'] . ' - chargement différé (pas de calcul)');
+                
+                $outputsHTML .= '<div class="iotawatt-main-value' . $this->getId() . '">';
+                
+                // Afficher le label seulement si showNameOndashboard est activé
+                if ($cmdShowName) {
+                    $outputsHTML .= '<span class="iotawatt-main-label' . $this->getId() . '">Consommation</span>';
+                }
+                
+                $outputsHTML .= '<div class="iotawatt-duet-content' . $this->getId() . '">';
+                
+                // Day period (default) - Données à charger
+                $outputsHTML .= '<div class="iotawatt-duet-period' . $this->getId() . '" data-period="day" data-cmd-id="' . $whData['id'] . '">';
+                $outputsHTML .= '<span class="iotawatt-main-number' . $this->getId() . ' cursor cmd history" ';
+                $outputsHTML .= 'data-cmd_id="' . $whData['id'] . '" ';
+                $outputsHTML .= 'title="{{Chargement...}}">';
+                $outputsHTML .= '<i class="fas fa-spinner fa-spin"></i> <span class="unit' . $this->getId() . '">' . $unit . '</span>';
+                $outputsHTML .= '</span>';
+                $outputsHTML .= '<span class="iotawatt-duet-percent' . $this->getId() . '" style="color: var(--txt-color);">';
+                $outputsHTML .= '...';
+                $outputsHTML .= '</span>';
+                $outputsHTML .= '</div>';
+                
+                // Month period - Données chargées à la demande
+                $outputsHTML .= '<div class="iotawatt-duet-period' . $this->getId() . '" data-period="month" data-cmd-id="' . $whData['id'] . '" style="display: none;">';
+                $outputsHTML .= '<span class="iotawatt-main-number' . $this->getId() . '">';
+                $outputsHTML .= '<i class="fas fa-spinner fa-spin"></i> <span class="unit' . $this->getId() . '">' . $unit . '</span>';
+                $outputsHTML .= '</span>';
+                $outputsHTML .= '<span class="iotawatt-duet-percent' . $this->getId() . '" style="color: var(--txt-color);">';
+                $outputsHTML .= '...';
+                $outputsHTML .= '</span>';
+                $outputsHTML .= '</div>';
+                
+                // Year period - Données chargées à la demande
+                $outputsHTML .= '<div class="iotawatt-duet-period' . $this->getId() . '" data-period="year" data-cmd-id="' . $whData['id'] . '" style="display: none;">';
+                $outputsHTML .= '<span class="iotawatt-main-number' . $this->getId() . '">';
+                $outputsHTML .= '<i class="fas fa-spinner fa-spin"></i> <span class="unit' . $this->getId() . '">' . $unit . '</span>';
+                $outputsHTML .= '</span>';
+                $outputsHTML .= '<span class="iotawatt-duet-percent' . $this->getId() . '" style="color: var(--txt-color);">';
+                $outputsHTML .= '...';
+                $outputsHTML .= '</span>';
+                $outputsHTML .= '</div>';
+                
+                $outputsHTML .= '</div>';
+                $outputsHTML .= '</div>';
+            }
+            
+            $outputsHTML .= '</div>'; // fin main-line
+            
+            // Autres valeurs (Volts, Amps, Hz, PF) - affichage secondaire
+            if (count($otherValues) > 0) {
+                $outputsHTML .= '<div class="iotawatt-input-values' . $this->getId() . '">';
+                foreach ($otherValues as $valueType => $data) {
+                    $cmdObj = cmd::byId($data['id']);
+                    $collectDate = is_object($cmdObj) ? $cmdObj->getCollectDate() : '';
+                    $valueDate = is_object($cmdObj) ? $cmdObj->getValueDate() : '';
+                    $tooltip = '{{Date de collecte :}} ' . $collectDate . '<br>{{Date de valeur :}} ' . $valueDate;
+                    
+                    $label = isset($labelMap[$valueType]) ? $labelMap[$valueType] : $valueType;
+                    
+                    $outputsHTML .= '<div class="iotawatt-input-item' . $this->getId() . '">';
+                    $outputsHTML .= '<span class="iotawatt-input-item-label' . $this->getId() . '">' . $label . '</span>';
+                    $outputsHTML .= '<span class="iotawatt-input-item-value' . $this->getId() . ' cursor cmd history" ';
+                    $outputsHTML .= 'data-cmd_id="' . $data['id'] . '" ';
+                    $outputsHTML .= 'title="' . htmlspecialchars($tooltip) . '">';
+                    $outputsHTML .= number_format($data['value'], 2, '.', '') . ' <span class="unit' . $this->getId() . '">' . $data['unit'] . '</span>';
+                    $outputsHTML .= '</span>';
+                    $outputsHTML .= '</div>';
+                }
+                $outputsHTML .= '</div>';
+            }
+            
+            $outputsHTML .= '</div>'; // fin card
+        }
+        
+        $replace['#outputs_html#'] = $outputsHTML;
+        
+        log::add(__CLASS__, 'debug', '[toHtml] Outputs HTML généré en ' . round((microtime(true) - $outputsHTMLStart) * 1000, 2) . 'ms');
+        
+        // Statistics - Calcul des statistiques comparatives
+        $replace['#total_power#'] = number_format($totalPower, 2, '.', '');
+        
+        // OPTIMISATION CRITIQUE : Ne PAS calculer les stats globales au chargement
+        // Ces données seront chargées à la demande quand l'utilisateur clique sur la page Stats
+        // Cela évite 112 appels supplémentaires à getStatistique() (8 appels × 14 commandes)
+        log::add(__CLASS__, 'debug', '[toHtml] Stats globales non calculées (chargement différé)');
+        
+        // Placeholders - seront remplacés par des spinners dans le template
+        $replace['#yesterday_consumption#'] = '<i class="fas fa-spinner fa-spin"></i>';
+        $replace['#today_consumption#'] = '<i class="fas fa-spinner fa-spin"></i>';
+        $replace['#last_month_consumption#'] = '<i class="fas fa-spinner fa-spin"></i>';
+        $replace['#current_month_consumption#'] = '<i class="fas fa-spinner fa-spin"></i>';
+        $replace['#last_year_consumption#'] = '<i class="fas fa-spinner fa-spin"></i>';
+        $replace['#current_year_consumption#'] = '<i class="fas fa-spinner fa-spin"></i>';
+
+        // Traiter toutes les commandes action
+        foreach ($this->getCmd('action', null) as $cmd) {
+            $replace['#cmd_' . $cmd->getLogicalId() . '_id#'] = $cmd->getId();
+        }
+        
+        // Div pour les infos graphiques supplémentaires
+        $replace['#divGraphInfo#'] = '';
+        
+        // Générer le HTML
+        $templateStartTime = microtime(true);
+        $html = template_replace($replace, getTemplate('core', $_version, 'iotawatt.template', __CLASS__));
+        log::add(__CLASS__, 'debug', '[toHtml] Template remplacé en ' . round((microtime(true) - $templateStartTime) * 1000, 2) . 'ms');
+        
+        $translateStartTime = microtime(true);
+        $html = translate::exec($html, 'plugins/iotawatt/core/template/' . $_version . '/iotawatt.template.html');
+        log::add(__CLASS__, 'debug', '[toHtml] Traduction effectuée en ' . round((microtime(true) - $translateStartTime) * 1000, 2) . 'ms');
+        
+        $totalTime = round((microtime(true) - $startTime) * 1000, 2);
+        log::add(__CLASS__, 'info', '[toHtml] HTML généré en ' . $totalTime . 'ms pour équipement #' . $this->getId());
+        
+        return $html;
+    }
+
 }
 
 class iotawattCmd extends cmd
@@ -1001,7 +1608,7 @@ class iotawattCmd extends cmd
     public function execute($_options = array())
     {
         $eqLogic = $this->getEqLogic();
-        log::add('iotawatt', 'debug', __("Action sur ", __FILE__) . $this->getLogicalId() . __(" avec options ", __FILE__) . json_encode($_options));
+        log::add(__CLASS__, 'debug', __("Action sur ", __FILE__) . $this->getLogicalId() . __(" avec options ", __FILE__) . json_encode($_options));
         switch ($this->getSubType()) {
             case 'slider':
                 $replace['#slider#'] = floatval($_options['slider']);
@@ -1033,12 +1640,12 @@ class iotawattCmd extends cmd
             case 'reboot':
                 $reboot = $eqLogic->request(iotawatt::HANDLECOMMAND . '?restart=yes');
 
-                log::add('iotawatt', 'debug', __FUNCTION__ . ' : ' . __('fin  (false)', __FILE__) . json_encode($reboot));
+                log::add(__CLASS__, 'debug', __FUNCTION__ . ' : ' . __('fin  (false)', __FILE__) . json_encode($reboot));
                 break;
             case 'deletelog':
                 if (!in_array(array('history','current','both'))) return false;
                 $deletelog = $eqLogic->request(iotawatt::HANDLECOMMAND . '?deletelog=' . $value);
-                log::add('iotawatt', 'debug', __FUNCTION__ . ' : ' . __('fin  (false)', __FILE__) . json_encode($deletelog));
+                log::add(__CLASS__, 'debug', __FUNCTION__ . ' : ' . __('fin  (false)', __FILE__) . json_encode($deletelog));
                 break;
         }
         return true;

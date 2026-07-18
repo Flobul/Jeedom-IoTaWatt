@@ -1,0 +1,1239 @@
+/* This file is part of Jeedom.
+ *
+ * Jeedom is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Jeedom is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * Jeedom is received a copy of the GNU General Public License
+ * along with Jeedom. If not, see <http://www.gnu.org/licenses/>.
+ */
+
+.chart-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px;
+    background-color: rgba(0, 0, 0, 0.03);
+    border-radius: 5px;
+}
+
+.chart-controls .form-group {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.chart-controls label {
+    margin: 0;
+    font-weight: bold;
+}
+
+.chart-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-top: 3px;
+}
+
+.stat-card {
+    padding: 8px;
+    background: #667eea;
+    color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.stat-card.success {
+    background: #28a745;
+}
+
+.stat-card.info {
+    background: #5da6cf;
+}
+
+.stat-card.warning {
+    background: #ff6b06;
+    color: #333;
+}
+
+.stat-card h4 {
+    margin: 0 0 5px 0;
+    font-size: 12px;
+    opacity: 0.8;
+    color: white;
+}
+
+.stat-card .value {
+    font-size: 18px;
+    font-weight: bold;
+    margin: 0;
+    color: white;
+    float: right;
+}
+
+.no-data {
+    text-align: center;
+    padding: 40px;
+    color: #999;
+    font-size: 18px;
+}
+
+.no-data i {
+    font-size: 48px;
+    margin-bottom: 15px;
+    display: block;
+    color: #ccc;
+}
+
+.chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding: 10px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 8px;
+}
+
+.chart-header h3 {
+    margin: 0;
+    font-size: 20px;
+}
+
+.chart-visual {
+    margin-top: 5px;
+    padding: 10px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.chart-visual h4 {
+    margin-top: 0;
+    color: #667eea;
+    font-size: 16px;
+}
+
+.chart-legend-inline {
+    text-align: center;
+    margin-top: 15px;
+    padding: 10px;
+    background-color: rgba(102, 126, 234, 0.1);
+    border-radius: 5px;
+    color: #666;
+}
+
+.chart-legend-inline i {
+    margin-right: 5px;
+    color: #667eea;
+}
+
+.chart-bars {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-around;
+    height: 400px;
+    padding: 5px 5px 5px 5px;
+    border-bottom: 3px solid #333;
+    position: relative;
+    background: linear-gradient(to top, rgba(0,0,0,0.05) 0%, transparent 100%);
+}
+
+.chart-type {
+    width: 100%;
+}
+
+.chart-bar-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    max-width: 100px;
+    height: 100%;
+    margin: 0 3px;
+}
+
+.chart-bar-stack {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    position: relative;
+}
+
+.chart-bar-stack > div:nth-child(2) {
+    border-radius: 10px 10px 0 0;
+}
+
+.chart-bar-segments {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    border-radius: 6px 6px 0 0;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    border: 2px solid rgba(255, 255, 255, 0.8);
+    overflow: hidden;
+}
+
+/* Conteneur pour les segments du graphique barres empilées total */
+.chart-segments {
+    width: 100%;
+    height: 375px;
+    display: flex;
+    flex-direction: column;
+    border-radius: 6px 6px 0 0;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    border: 2px solid rgba(255, 255, 255, 0.8);
+    overflow: hidden;
+}
+
+.chart-bar-segments:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.chart-segment {
+    width: 100%;
+    transition: all 0.3s ease;
+    position: relative;
+    border-top: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.chart-segment:first-child {
+    border-radius: 6px 6px 0 0;
+    border-top: none;
+}
+
+.chart-segment:hover {
+    filter: brightness(1.2);
+    z-index: 10;
+    transform: scaleX(1.1);
+}
+
+.chart-segment.dimmed,
+.grouped-bar.dimmed,
+.pie-slice.dimmed {
+    opacity: 0.3 !important;
+}
+
+.chart-segment.highlighted,
+.grouped-bar.highlighted,
+.pie-slice.highlighted {
+    transform: scale(1.1);
+    filter: brightness(1.2);
+    z-index: 100;
+}
+
+.chart-bar-label {
+    margin-top: 8px;
+    font-size: 11px;
+    font-weight: bold;
+    text-align: center;
+    color: white;
+}
+
+[data-theme="core2019_Dark"] .chart-bar-label {
+    color: #fff;
+}
+
+.chart-bar-display {
+    z-index: 10;
+}
+
+.chart-bar-value {
+    font-size: 16px;
+    font-weight: bold;
+    color: white;
+    text-align: center;
+    white-space: nowrap;
+    display: block;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 0 5px;
+    border-radius: 4px;
+    width: 90px;
+    margin: 5px auto;
+}
+
+.chart-bar-cost {
+    font-size: 16px;
+    font-weight: bold;
+    color: white;
+    text-align: center;
+    white-space: nowrap;
+    display: block;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 0 5px;
+    border-radius: 4px;
+    width: 100%;
+    margin: 5px auto;
+}
+
+.chart-bar-total {
+    font-size: 16px;
+    font-weight: bold;
+    color: white;
+    text-align: center;
+    white-space: nowrap;
+    display: block;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 0 5px;
+    border-radius: 4px;
+    width: 100%;
+    margin: 5px auto;
+}
+
+#toggleValueType {
+    position: absolute;
+    right: 0;
+    z-index: 20;
+    padding: 3px 8px;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    border: 2px solid #ddd;
+    margin-top: -30px;
+}
+
+#toggleValueType:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+#toggleValueType.active {
+    background-color: #5cb85c;
+    border-color: #4cae4c;
+    color: white;
+}
+
+#toggleValueType:not(.active) {
+    background-color: #fff;
+    border-color: #ccc;
+    color: #333;
+}
+
+#toggleValueType i {
+    margin: 0 3px;
+}
+
+/* Toggle Switch kWh/€ */
+.toggle-container {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 12px;
+    background: white;
+    border-radius: 25px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    border: 2px solid #ddd;
+    position: absolute;
+    right: 0;
+    z-index: 20;
+}
+
+.toggle-label {
+    font-size: 13px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: color 0.3s ease;
+}
+
+.toggle-label:first-child {
+    color: #28a745;
+}
+
+.toggle-label:last-child {
+    color: #007bff;
+}
+
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 26px;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #28a745;
+    transition: 0.4s;
+    border-radius: 26px;
+}
+
+.toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 20px;
+    width: 20px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: 0.4s;
+    border-radius: 50%;
+}
+
+.toggle-switch input:checked + .toggle-slider {
+    background-color: #007bff;
+}
+
+.toggle-switch input:checked + .toggle-slider:before {
+    transform: translateX(24px);
+}
+
+/* Camembert */
+.chart-pie {
+    display: flex;
+    justify-content: center;
+    padding: 10px 0;
+}
+
+.pie-container {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    max-width: 900px;
+    margin: -5% auto;
+}
+
+.pie-chart {
+    width: 400px;
+    height: 400px;
+}
+
+.pie-slice {
+    cursor: pointer;
+    transition: all 0.3s ease;
+    transform-origin: center;
+}
+
+.pie-slice:hover {
+    transform: scale(1.08);
+    filter: brightness(1.15);
+}
+
+.pie-legend {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.pie-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    padding: 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.pie-legend-item:hover {
+    background-color: rgba(102, 126, 234, 0.1);
+    transform: translateX(5px);
+}
+
+.pie-legend-color {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    flex-shrink: 0;
+}
+
+.pie-legend-label {
+    flex: 1;
+    font-weight: 500;
+    color: #2c3e50;
+}
+
+/* Camembert journalier */
+.daily-pies-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 10px;
+    justify-content: center;
+    max-width: 100%;
+}
+
+.daily-pie-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: transparent;
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+    position: relative;
+    margin: 5px;
+    max-width: 200px;
+}
+
+.daily-pie-item:hover {
+    transform: scale(1.05);
+}
+
+.daily-pie-item .pie-chart {
+    width: 140px;
+    max-width: 100%;
+    height: auto;
+}
+
+.daily-pie-date {
+    font-size: 11px;
+    color: #666;
+    margin-top: 5px;
+    font-weight: 500;
+}
+
+.daily-pie-cost {
+    position: absolute;
+    top: 8px;
+    font-size: 14px;
+    font-weight: bold;
+    color: white;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 0 5px;
+    border-radius: 4px;
+    white-space: nowrap;
+    z-index: 10;
+}
+
+.daily-pie-kwh {
+    position: absolute;
+    top: 1px;
+    font-size: 14px;
+    font-weight: bold;
+    color: white;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 0 5px;
+    border-radius: 4px;
+    white-space: nowrap;
+    z-index: 10;
+}
+
+/* Responsive: ajuster la taille selon le nombre de jours */
+@media (min-width: 1400px) {
+    .daily-pies-container {
+        max-width: 100%;
+    }
+}
+
+@media (max-width: 1399px) {
+    .daily-pie-item .pie-chart {
+        width: 120px;
+    }
+}
+
+@media (max-width: 992px) {
+    .daily-pie-item .pie-chart {
+        width: 100px;
+    }
+}
+
+/* Camembert total - labels centraux */
+.pie-center-kwh,
+.pie-center-cost {
+    position: relative;
+    top: 10px;
+    font-size: 16px;
+    font-weight: bold;
+    color: white;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 10;
+    margin: 0 auto;
+    text-align: center;
+    white-space: nowrap;
+    padding: 0 5px;
+    border-radius: 4px;
+    width: 100px;
+}
+
+.pie-legend-value {
+    color: #7f8c8d;
+    font-size: 13px;
+}
+
+/* Barres groupées */
+
+.grouped-kwh {
+    position: absolute;
+    font-size: 14px;
+    font-weight: bold;
+    color: white;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 4px 6px;
+    border-radius: 6px;
+    z-index: 10;
+}
+
+.grouped-bars-container {
+    display: flex;
+    gap: 20px;
+    justify-content: space-around;
+    align-items: flex-end;
+    min-height: 400px;
+    padding: 20px 0;
+}
+
+.grouped-day {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+}
+
+.chart-with-top-label .grouped-bars {
+    width: 100%;
+}
+
+.grouped-bars {
+    display: flex;
+    gap: 1px;
+    align-items: flex-end;
+    height: 350px;
+    width: 150px;
+    justify-content: center;
+}
+
+.chart-with-top-label .grouped-bar {
+    width: 30px;
+}
+
+.grouped-bar {
+    width: 20px;
+    min-height: 2px;
+    border-radius: 4px 4px 0 0;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.grouped-bar:hover {
+    transform: scale(1.15);
+    filter: brightness(1.2);
+    z-index: 10;
+}
+
+.grouped-label {
+    font-size: 11px;
+    color: #666;
+    text-align: center;
+    font-weight: 500;
+}
+
+.grouped-cost,
+.grouped-kwh {
+    font-size: 14px;
+    font-weight: bold;
+    color: white;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 0 5px;
+    border-radius: 4px;
+    white-space: nowrap;
+    z-index: 10;
+}
+
+/* Wrapper pour graphique avec label total en haut */
+.chart-with-top-label {
+    position: relative;
+    padding-top: 20px;
+}
+
+/* Container pour label total en haut (grouped-total) */
+.grouped-total-label-container {
+    position: absolute;
+    top: -50px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 15;
+    margin-top: 25px;
+}
+
+.grouped-total-label-container .grouped-kwh,
+.grouped-total-label-container .grouped-cost {
+    position: relative;
+    top: 10px;
+    font-size: 16px;
+    font-weight: bold;
+    color: white;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 10;
+    margin: 0 auto;
+    text-align: center;
+    white-space: nowrap;
+    padding: 0 5px;
+    border-radius: 4px;
+    width: 100px;
+}
+
+/* Label total pour line et area charts */
+.chart-period-total,
+.chart-period-total-kwh,
+.chart-period-total-cost {
+    position: absolute;
+    top: 18px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 18px;
+    font-weight: bold;
+    color: white;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 8px 16px;
+    border-radius: 6px;
+    z-index: 10;
+}
+
+/* Wrapper pour pie chart */
+.pie-chart-wrapper {
+    position: relative;
+}
+
+/* Graphique lignes */
+
+.line-chart-container {
+    display: flex;
+    width: 100%;
+}
+
+.line-chart {
+    width: 100%;
+    height: 500px;
+}
+
+.line-path {
+    transition: stroke-width 0.2s;
+}
+
+.line-path:hover {
+    stroke-width: 5;
+}
+
+.line-path.dimmed {
+    opacity: 0.3;
+}
+
+.line-path.highlighted {
+    stroke-width: 5;
+    filter: brightness(1.2);
+}
+
+.line-point {
+    cursor: pointer;
+    transition: r 0.2s;
+}
+
+.line-point:hover {
+    r: 8;
+}
+
+.line-point.dimmed {
+    opacity: 0.3;
+}
+
+.line-point.highlighted {
+    r: 8;
+    filter: brightness(1.2);
+}
+
+.grid line {
+    stroke: #e0e0e0;
+    stroke-width: 1;
+}
+
+[data-theme="core2019_Dark"] .chart-equipment-list {
+    color: #eaeaea;
+}
+
+.chart-equipment-list {
+    margin-top: 10px;
+    padding: 15px;
+    background-color: rgba(0, 0, 0, 0.02);
+    border-radius: 8px;
+}
+
+.chart-equipment-list h4 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    color: #667eea;
+}
+
+[data-theme="core2019_Dark"] .equipment-card {
+    background-color: #3e3e3e;
+}
+
+.equipment-card {
+    display: flex;
+    align-items: center;
+    padding: 0 14px;
+    margin-bottom: 2px;
+    background-color: white;
+    border-radius: 5px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.equipment-card:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    transform: translateX(5px);
+}
+
+.equipment-card.highlighted {
+    background-color: rgba(102, 126, 234, 0.15);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    transform: scale(1.02);
+    border: 2px solid #667eea;
+}
+
+.equipment-card.dimmed-chart {
+    display: none;
+}
+
+.equipment-card.dimmed-list {
+    opacity: 0.3;
+}
+
+.equipment-color {
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    margin-right: 12px;
+    border: 2px solid rgba(0, 0, 0, 0.1);
+}
+
+.equipment-info {
+    display: block;
+    flex: 1;
+}
+
+.equipment-name {
+    font-weight: bold;
+    font-size: 11px;
+}
+
+[data-theme="core2019_Dark"] .equipment-total {
+    color: #e0e0e0;
+}
+
+.equipment-total {
+    font-size: 10px;
+    color: #666;
+    margin-right: 12px;
+    float: right;
+}
+
+.equipment-card .btn {
+    margin-left: 10px;
+}
+
+/* Styles pour les nouveaux types de graphiques */
+
+/* Graphique aires empilées */
+.area-chart-container {
+    width: 100%;
+    height: 400px;
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+
+.area-chart {
+    width: 100%;
+    height: 100%;
+    min-width: 800px;
+}
+
+.area-path {
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.area-path:hover {
+    opacity: 0.8;
+}
+
+.area-segment {
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.area-segment:hover {
+    filter: brightness(1.2);
+    stroke-width: 2;
+}
+
+/* Graphique radar */
+.radar-chart-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 400px;
+}
+
+.radar-chart {
+    width: 100%;
+    max-width: 400px;
+    height: 100%;
+}
+
+.radar-area {
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.radar-area:hover {
+    opacity: 0.8;
+}
+
+/* Carte thermique */
+.heatmap-container {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.heatmap-grid {
+    display: inline-block;
+    min-width: 100%;
+}
+
+.heatmap-header {
+    display: flex;
+    background-color: rgba(0, 0, 0, 0.05);
+    border-bottom: 1px solid #ddd;
+}
+
+.heatmap-corner {
+    width: 150px;
+    flex-shrink: 0;
+}
+
+.heatmap-header-cell {
+    flex: 1;
+    min-width: 80px;
+    padding: 8px;
+    text-align: center;
+    font-weight: bold;
+    font-size: 12px;
+    border-right: 1px solid #ddd;
+}
+
+.heatmap-row {
+    display: flex;
+    border-bottom: 1px solid #eee;
+}
+
+.heatmap-row-label {
+    width: 150px;
+    flex-shrink: 0;
+    padding: 8px;
+    font-weight: bold;
+    font-size: 12px;
+    background-color: rgba(0, 0, 0, 0.02);
+    border-right: 1px solid #ddd;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.heatmap-cell {
+    flex: 1;
+    min-width: 80px;
+    height: 40px;
+    border-right: 1px solid #ddd;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.heatmap-cell:hover {
+    opacity: 0.8;
+    border: 2px solid #333;
+    margin: -1px;
+}
+
+.heatmap-legend {
+    margin-top: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.legend-title {
+    font-weight: bold;
+    font-size: 12px;
+}
+
+.legend-scale {
+    display: flex;
+    height: 20px;
+    border: 1px solid #ddd;
+}
+
+.legend-step {
+    flex: 1;
+    height: 100%;
+}
+
+.legend-labels {
+    display: flex;
+    justify-content: space-between;
+    width: 100px;
+    font-size: 11px;
+    color: #666;
+}
+
+/* Responsive pour les nouveaux graphiques */
+@media (max-width: 768px) {
+    .area-chart-container,
+    .radar-chart-container {
+        height: 300px;
+    }
+
+    .heatmap-row-label {
+        width: 120px;
+        font-size: 11px;
+    }
+
+    .heatmap-header-cell,
+    .heatmap-cell {
+        min-width: 60px;
+    }
+}
+
+/* Thème sombre pour les nouveaux graphiques */
+[data-theme="core2019_Dark"] .heatmap-header {
+    background-color: rgba(255, 255, 255, 0.05);
+    border-bottom-color: #444;
+}
+
+[data-theme="core2019_Dark"] .heatmap-row-label {
+    background-color: rgba(255, 255, 255, 0.02);
+    border-right-color: #444;
+}
+
+[data-theme="core2019_Dark"] .heatmap-cell {
+    border-right-color: #444;
+}
+
+[data-theme="core2019_Dark"] .heatmap-row {
+    border-bottom-color: #333;
+}
+
+[data-theme="core2019_Dark"] .legend-scale {
+    border-color: #444;
+}
+
+[data-theme="core2019_Dark"] #chartContainer .radar-chart text,
+[data-theme="core2019_Dark"] #chartContainer .area-chart text,
+[data-theme="core2019_Dark"] #chartContainer .line-chart text {
+    fill: white;
+}
+
+
+/* Section tarifs EDF */
+.tariff-info-section {
+    margin: 20px 0;
+    padding: 15px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+}
+
+.tariff-info-section h4 {
+    margin: 0 0 15px 0;
+    color: #495057;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.tariff-details {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.tariff-card {
+    background: white;
+    padding: 12px;
+    border-radius: 6px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border: 1px solid #e9ecef;
+}
+
+.tariff-card h5 {
+    margin: 0 0 8px 0;
+    color: #343a40;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.tariff-value {
+    font-size: 18px;
+    font-weight: bold;
+    color: #007bff;
+    margin: 0;
+}
+
+.tariff-card small {
+    color: #6c757d;
+    font-size: 12px;
+}
+
+.tempo-prices {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.tempo-prices span {
+    font-size: 13px;
+    color: #495057;
+}
+
+.tax-details {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.tax-details span {
+    font-size: 12px;
+    color: #6c757d;
+}
+
+.tariff-sources {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #dee2e6;
+}
+
+.tariff-sources a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+.tariff-sources a:hover {
+    text-decoration: underline;
+}
+/* Tableau récapitulatif Tempo */
+.tempo-summary {
+    background: #f8f9fa;
+    border: 2px solid #dee2e6;
+}
+
+.tempo-summary h4 {
+    color: #333;
+    margin-bottom: 15px;
+    font-weight: bold;
+}
+
+.tempo-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.tempo-table thead {
+    background: #f8f9fa;
+}
+
+.tempo-table th {
+    padding: 12px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: bold;
+    color: #333;
+    border: 1px solid #dee2e6;
+}
+
+.tempo-table th:first-child {
+    text-align: left;
+    background: #e9ecef;
+}
+
+.tempo-table .tempo-col-bleu {
+    background-color: #0055A4;
+    color: white;
+}
+
+.tempo-table .tempo-col-blanc {
+    background-color: #FFFFFF;
+    color: black;
+    border: 1px solid #ddd;
+}
+
+.tempo-table .tempo-col-rouge {
+    background-color: #EF4135;
+    color: white;
+}
+
+.tempo-table td {
+    padding: 10px;
+    text-align: center;
+    font-size: 13px;
+    color: #333;
+    border: 1px solid #dee2e6;
+}
+
+.tempo-table td:first-child {
+    text-align: left;
+    font-weight: 600;
+    background: #f8f9fa;
+}
+
+.tempo-table td small {
+    color: #6c757d;
+    font-size: 11px;
+    display: block;
+    margin-top: 4px;
+}
+
+.tempo-table .tempo-tariff {
+    font-size: 10px;
+    color: #868e96;
+    font-style: italic;
+}
+
+.tempo-table tbody tr {
+    transition: background-color 0.2s ease;
+    background-color: #FFF;
+}
+
+.tempo-table tbody tr:hover td:not(:first-child) {
+    background-color: rgba(0, 0, 0, 0.3);
+}

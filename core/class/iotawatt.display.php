@@ -71,6 +71,7 @@ class iotawatt_display extends eqLogic
      * @return void
      */
     public static function displayEqLogicThumbnailContainer($eqLogics) {
+        global $_type;
         echo '<div class="panel panel-default">';
         echo '    <h3 class="panel-title">';
         echo '        <a class="accordion-toggle" data-toggle="collapse" data-parent="" href="#iotawattBox"><i class=""></i> </a>';

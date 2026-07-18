@@ -14,23 +14,27 @@
  * along with Jeedom. If not, see <http://www.gnu.org/licenses/>.
  */
 
-$("#table_cmd").sortable({axis: "y", cursor: "move", items: ".cmd", placeholder: "ui-state-highlight", tolerance: "intersect", forcePlaceholderSize: true});
-
-$('.eqLogicAttr[data-l1key="configuration"][data-l2key="group"]').on('change', function(){
-    if ($(this).find('option:selected').value() === 'manual') {
-        $('#idResolution').hide();
-        $('#idManualGroup').show();
-    } else if ($(this).find('option:selected').value() === 'auto') {
-        $('#idResolution').show();
-        $('#idManualGroup').hide();
-    } else if ($(this).find('option:selected').value() === 'all') {
-        $('#idResolution').hide();
-        $('#idManualGroup').hide();
-    } else {
-        $('#idResolution').hide();
-        $('#idManualGroup').hide();
+function printEqlogic() {
+    var groupSelect = document.querySelector('.eqLogicAttr[data-l1key="configuration"][data-l2key="group"]');
+    if (groupSelect && groupSelect.tagName === 'SELECT') {
+        groupSelect.addEventListener('change', function(){
+            var selectedValue = this.options[this.selectedIndex].value;
+            var idResolution = document.getElementById('idResolution');
+            var idManualGroup = document.getElementById('idManualGroup');
+            
+            if (selectedValue === 'manual') {
+                if (idResolution) idResolution.style.display = 'none';
+                if (idManualGroup) idManualGroup.style.display = 'block';
+            } else if (selectedValue === 'auto') {
+                if (idResolution) idResolution.style.display = 'block';
+                if (idManualGroup) idManualGroup.style.display = 'none';
+            } else {
+                if (idResolution) idResolution.style.display = 'none';
+                if (idManualGroup) idManualGroup.style.display = 'none';
+            }
+        });
     }
-});
+}
 
 document.getElementById('table_cmd').addEventListener('click', function(event) {
   if (_target = event.target.closest('.cmdAction[data-action="reloadHistory"]')) {
@@ -67,7 +71,8 @@ document.getElementById('table_cmd').addEventListener('click', function(event) {
                 label: "{{Recharger}}",
                 className: "btn-success",
                 callback: function() {
-                    const val = $('#md_history .btn-success.btnStartDate').data('value') ?? $('#md_history .btn-success.btnStartDate').value();
+                    const selectedBtn = document.querySelector('#md_history .btn-success.btnStartDate');
+                    const val = selectedBtn?.dataset.value || selectedBtn?.value;
                     switch (val) {
                         case '0':
                             var value = 's';
@@ -92,35 +97,39 @@ document.getElementById('table_cmd').addEventListener('click', function(event) {
                             var value = val.replace(" ", "T");
                             break;
                     }
-                    $.ajax({
-                        async: true,
-                        type: "POST",
-                        url: "plugins/iotawatt/core/ajax/iotawatt.ajax.php",
-                        data: {
+                    fetch('plugins/iotawatt/core/ajax/iotawatt.ajax.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: new URLSearchParams({
                             action: 'reloadHistory',
                             id: id,
                             begin: value
-                        },
-                        dataType: 'json',
-                        global: false,
-                        error: function(request, status, error) {
-                            handleAjaxError(request, status, error);
-                        },
-                        success: function(data) {
-                            if (data.state != 'ok') {
-                                $.fn.showAlert({
-                                    message: data.result,
-                                    level: 'danger'
-                                });
-                                return;
-                            }
-                            if (data.result) {
-                               $.fn.showAlert({
-                                    message: '{{Historique remis à jour depuis IoTaWatt.}}',
-                                    level: 'success'
-                                });
-                            }
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(function(data) {
+                        if (data.state != 'ok') {
+                            jeedomUtils.showAlert({
+                                message: data.result,
+                                level: 'danger'
+                            });
+                            return;
                         }
+                        if (data.result) {
+                           jeedomUtils.showAlert({
+                                message: '{{Historique remis à jour depuis IoTaWatt.}}',
+                                level: 'success'
+                            });
+                        }
+                    })
+                    .catch(function(error) {
+                        console.error('Error:', error);
+                        jeedomUtils.showAlert({
+                            message: 'Erreur lors de la requête AJAX',
+                            level: 'danger'
+                        });
                     });
                 }
             }
@@ -129,43 +138,79 @@ document.getElementById('table_cmd').addEventListener('click', function(event) {
 }
 });
 
-$('body').delegate('#md_history .btnStartDate', 'click', function() {
-    if ($(this).hasClass('btn-success')) {
-        $('.btnStartDate').removeClass('btn-success');
-        $(this).removeClass('btn-success');
-    } else {
-        $('.btnStartDate').removeClass('btn-success');
-        $(this).addClass('btn-success');
+document.body.addEventListener('click', function(event) {
+    if (event.target.closest('#md_history .btnStartDate')) {
+        var btn = event.target.closest('.btnStartDate');
+        var allBtns = document.querySelectorAll('.btnStartDate');
+        
+        if (btn.classList.contains('btn-success')) {
+            allBtns.forEach(function(b) { b.classList.remove('btn-success'); });
+            btn.classList.remove('btn-success');
+        } else {
+            allBtns.forEach(function(b) { b.classList.remove('btn-success'); });
+            btn.classList.add('btn-success');
+        }
     }
 });
 
-$('.cmdAction[data-action=addCommand]').on('click', function() {
-    $('#md_modal').dialog({
-        title: "{{Ajout de commande}}"
+var addCommandBtn = document.querySelector('.cmdAction[data-action=addCommand]');
+if (addCommandBtn) {
+    addCommandBtn.addEventListener('click', function() {
+        var eqLogicId = document.querySelector('.eqLogicAttr[data-l1key=id]').value;
+        jeeDialog.dialog({
+            id: 'jee_modal',
+            title: '{{Ajout de commande}}',
+            contentUrl: 'index.php?v=d&plugin=iotawatt&modal=addCommand&eqLogic_id=' + eqLogicId
+        });
     });
-    $('#md_modal').load('index.php?v=d&plugin=iotawatt&modal=addCommand&eqLogic_id='+$('.eqLogicAttr[data-l1key=id]').value()).dialog('open');
-});
+}
 
-$('.eqLogicAction[data-action=backup]').on('click', function() {
-    $('#md_modal').dialog({
-        title: "{{Backup}}"
+var backupBtn = document.querySelector('.eqLogicAction[data-action=backup]');
+if (backupBtn) {
+    backupBtn.addEventListener('click', function() {
+        var eqLogicId = document.querySelector('.eqLogicAttr[data-l1key=id]').value;
+        jeeDialog.dialog({
+            id: 'jee_modal',
+            title: '{{Backup}}',
+            contentUrl: 'index.php?v=d&plugin=iotawatt&modal=backup&eqLogic_id=' + eqLogicId
+        });
     });
-    $('#md_modal').load('index.php?v=d&plugin=iotawatt&modal=backup&eqLogic_id='+$('.eqLogicAttr[data-l1key=id]').value()).dialog('open');
-});
+}
 
-$('#bt_healthiotawatt').off('click').on('click', function() {
-  $('#md_modal').dialog({
-    title: "{{Santé IotaWatt}}"
-  });
-  $('#md_modal').load('index.php?v=d&plugin=iotawatt&modal=health').dialog('open');
-});
+var healthBtn = document.getElementById('bt_healthiotawatt');
+if (healthBtn) {
+    healthBtn.addEventListener('click', function() {
+        jeeDialog.dialog({
+            id: 'jee_modal',
+            title: '{{Santé IotaWatt}}',
+            contentUrl: 'index.php?v=d&plugin=iotawatt&modal=health'
+        });
+    });
+}
 
-$('#bt_poweriotawatt').off('click').on('click', function() {
-  $('#md_modal').dialog({
-    title: "{{Puissances IotaWatt}}"
-  });
-  $('#md_modal').load('index.php?v=d&plugin=iotawatt&modal=power').dialog('open');
-});
+var powerBtn = document.getElementById('bt_poweriotawatt');
+if (powerBtn) {
+    powerBtn.addEventListener('click', function() {
+        jeeDialog.dialog({
+            id: 'jee_modal',
+            title: '{{Puissances IotaWatt}}',
+            contentUrl: 'index.php?v=d&plugin=iotawatt&modal=power'
+        });
+    });
+}
+
+var chartBtn = document.getElementById('bt_chartiotawatt');
+if (chartBtn) {
+    chartBtn.addEventListener('click', function() {
+        jeeDialog.dialog({
+            id: 'jee_modal',
+            title: '{{Graphiques de consommation}}',
+            contentUrl: 'index.php?v=d&plugin=iotawatt&modal=chart&days=7',
+            width: 1200,
+            height: 800
+        });
+    });
+}
 
 
 function addCmdToTable(_cmd) {
@@ -175,6 +220,11 @@ function addCmdToTable(_cmd) {
    if (!isset(_cmd.configuration)) {
      _cmd.configuration = {};
    }
+  
+    const cmdId = init(_cmd.id);
+    const cmdType = init(_cmd.type);
+    const cmdSubType = init(_cmd.subType);
+
 
   var tr = '<tr class="cmd" data-cmd_id="' + init(_cmd.id) + '">'
   tr += '<td class="hidden-xs">'
@@ -195,7 +245,7 @@ function addCmdToTable(_cmd) {
   tr += '    <span class="subType" subType="' + init(_cmd.subType) + '"></span>';
   tr += '</td>';
 
-  tr += '<td>';
+  tr += '<td style="min-width:150px;">';
   if (init(_cmd.type) == 'info') {
     tr += '    <select class="cmdAttr form-control input-sm" data-l1key="configuration" data-l2key="type" title="{{Entrée/Sortie}}" disabled>';
     tr += '        <option value="input">{{Entrée}}</option>';
@@ -294,62 +344,68 @@ function addCmdToTable(_cmd) {
   tr += '<a class="btn btn-danger btn-xs cmdAction roundedRight" data-action="remove" title="{{Suppression de la commande}} ' + _cmd.type + '"><i class="fas fa-minus-circle"></i></a>';
   tr += '</tr>';
 
-   $('#table_cmd tbody').append(tr);
-   var tr = $('#table_cmd tbody tr').last();
+    const newRow = document.createElement('tr');
+    newRow.innerHTML = tr;
+    newRow.classList.add('cmd');
+    newRow.setAttribute('data-cmd_id', cmdId);
+    document.getElementById('table_cmd').querySelector('tbody').appendChild(newRow);
 
-   jeedom.eqLogic.buildSelectCmd({
-     id:  $('.eqLogicAttr[data-l1key=id]').value(),
-     filter: {type: 'info'},
-     error: function (error) {
-       $.fn.showAlert({message: error.message, level: 'danger'});
-     },
-     success: function (result) {
-
-       tr.find('.cmdAttr[data-l1key=value]').append(result);
-       tr.find('.cmdAttr[data-l1key=configuration][data-l2key=updateCmdId]').append(result);
-       tr.setValues(_cmd, '.cmdAttr');
-       jeedom.cmd.changeType(tr, init(_cmd.subType));
-     }
-   });
+    jeedom.eqLogic.buildSelectCmd({
+        id: document.querySelector('.eqLogicAttr[data-l1key="id"]').value,
+        filter: { type: 'info' },
+        error: (error) => {
+            jeedomUtils.showAlert({ message: error.message, level: 'danger' });
+        },
+        success: (result) => {
+            newRow.querySelector('.cmdAttr[data-l1key="value"]').insertAdjacentHTML('beforeend', result);
+            newRow.querySelector('.cmdAttr[data-l1key="configuration"][data-l2key="updateCmdId"]')?.insertAdjacentHTML('beforeend', result);
+            newRow.setJeeValues(_cmd, '.cmdAttr');
+            jeedom.cmd.changeType(newRow, cmdSubType);
+        }
+    });
 }
 
-$(document).on("change",'.cmdAttr[data-l1key="configuration"][data-l2key="valueType"]',function(e) {
-    if (e.isTrigger === undefined) {
-        var value = $(this).val();
-        var trUnit = $(this).parents('tr.cmd').find('.cmdAttr[data-l1key="unite"]');
-        var trSerie = $(this).parents('tr.cmd').find('.cmdAttr[data-l1key="configuration"][data-l2key="serie"]');
-        var trDecimal = $(this).parents('tr.cmd').find('.cmdAttr[data-l1key="configuration"][data-l2key="round"]');
+document.addEventListener('change', function(event) {
+    if (event.target.matches('.cmdAttr[data-l1key="configuration"][data-l2key="valueType"]')) {
+        var select = event.target;
+        var value = select.value;
+        var tr = select.closest('tr.cmd');
+        if (!tr) return;
+        
+        var trUnit = tr.querySelector('.cmdAttr[data-l1key="unite"]');
+        var trSerie = tr.querySelector('.cmdAttr[data-l1key="configuration"][data-l2key="serie"]');
+        var trDecimal = tr.querySelector('.cmdAttr[data-l1key="configuration"][data-l2key="round"]');
 
-        $.ajax({
-          async: true,
-          type: "POST",
-          url: "plugins/iotawatt/core/ajax/iotawatt.ajax.php",
-          data: {
-              action: 'getUnite',
-              unit: value
-          },
-          dataType: 'json',
-          global: false,
-          error: function(request, status, error) {
-            handleAjaxError(request, status, error);
-          },
-          success: function(data) {
+        fetch('plugins/iotawatt/core/ajax/iotawatt.ajax.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                action: 'getUnite',
+                unit: value
+            })
+        })
+        .then(response => response.json())
+        .then(function(data) {
             if (data.state != 'ok') {
-              $.fn.showAlert({
-                message: data.result,
-                level: 'danger'
-              });
-              return;
+                jeedomUtils.showAlert({
+                    message: data.result,
+                    level: 'danger'
+                });
+                return;
             }
             if (data.result) {
-                if (data.result.unit && data.result.unit != trUnit.value()) {
-                    trUnit.value(data.result.unit);
+                if (data.result.unit && data.result.unit != trUnit.value) {
+                    trUnit.value = data.result.unit;
                 }
-                if (data.result.decimals && data.result.decimals != trDecimal.value()) {
-                    trDecimal.value(data.result.decimals);
+                if (data.result.decimals && data.result.decimals != trDecimal.value) {
+                    trDecimal.value = data.result.decimals;
                 }
             }
-          }
-       });
+        })
+        .catch(function(error) {
+            console.error('Error:', error);
+        });
     }
 });

@@ -18,290 +18,430 @@
 if (!isConnect('admin')) {
     throw new Exception('401 Unauthorized');
 }
-$eqLogics = iotawatt::byType('iotawatt');
-$historyCalculTendanceThresholddMax = config::byKey('historyCalculTendanceThresholddMax');
-$historyCalculTendanceThresholddMin = config::byKey('historyCalculTendanceThresholddMin');
-$logo = array(
-    'arrowUp'   => '<i class="fas fa-arrow-up icon_red"></i>',
-    'arrowDown' => '<i class="fas fa-arrow-down icon_green"></i>',
-    'minus'     => '<i class="fas fa-minus icon_blue"></i>'
-);
 
-function getColorForPourcentage($pourcent) {
-    if (is_nan($pourcent)) {
-        return "hsl(0, 0%, 50%)";
+require_once __DIR__ . '/../../core/class/iotawatt.power.class.php';
+
+// Initialisation
+$powerData = new IotawattPowerData();
+$cmdArray = $powerData->collectData();
+$logos = IotawattPowerData::getTendanceLogos();
+
+// Configuration tarifaire pour les calculs de coûts
+$tariffType = config::byKey('tariffType', 'iotawatt', 'base');
+$subscribedPower = config::byKey('subscribedPower', 'iotawatt', 6);
+sendVarToJS('tariffType', $tariffType);
+sendVarToJS('subscribedPower', $subscribedPower);
+sendVarToJS('energyRateHP', config::byKey('energyRateHP', 'iotawatt', 0.1808));
+sendVarToJS('energyRateHC', config::byKey('energyRateHC', 'iotawatt', 0.1256));
+sendVarToJS('subscriptionDailyCost', 0); // Sera calculé côté JS
+
+/**
+ * Fonction simple de calcul de coût pour un jour
+ * Utilise une approximation basique pour éviter la dépendance à chart.php
+ */
+function calculateDailyCost($consumptionKwh, $date = null) {
+    if ($date === null) {
+        $date = date('Y-m-d');
     }
-    $light = 30;
-    $currentTimestamp = time();
-    $startOfDayTimestamp = strtotime('today', $currentTimestamp);
-    $endOfDayTimestamp = strtotime('tomorrow', $startOfDayTimestamp) - 1;
-    $percentOfDay = (($currentTimestamp - $startOfDayTimestamp) / ($endOfDayTimestamp - $startOfDayTimestamp)) * 100;
-    $percentOfDay = max(0, min(100, $percentOfDay));
-    $pourcent = max(-200, min(400, $pourcent)); // Ajusté à -200 à 400 pour la transition complète
-
-    if ($pourcent < 0) {
-        // Pourcentage négatif : du vert au rouge
-        $hue = 120 - $percentOfDay * 1.2; // Soustrayez du vert en fonction du pourcentage de la journée
+    
+    // Si consommation nulle, retourner 0
+    if ($consumptionKwh == 0) {
+        return 0;
+    }
+    
+    $tariffType = config::byKey('tariffType', 'iotawatt', 'base');
+    $rateHP = config::byKey('energyRateHP', 'iotawatt', 0.1808);
+    $rateHC = config::byKey('energyRateHC', 'iotawatt', 0.1256);
+    
+    // Calcul simplifié du coût énergétique
+    if ($tariffType === 'hphc') {
+        // Répartition approximative 60% HP / 40% HC
+        $energyCost = ($consumptionKwh * 0.6 * $rateHP) + ($consumptionKwh * 0.4 * $rateHC);
+    } else if ($tariffType === 'tempo') {
+        // Utiliser le tarif moyen Tempo (simplifié)
+        $energyCost = $consumptionKwh * 0.15; // Approximation
     } else {
-        if ($pourcent > 200) {
-            // Pourcentage supérieur à 200 : du rouge au noir
-            $hue = 0; // Rouge à 0 degrés
-            $light -= $pourcent / 10;
-        } else {
-            // Pourcentage positif : du rouge au noir
-            $hue = 0 + $percentOfDay * 1.2; // Ajoutez du rouge en fonction du pourcentage de la journée
+        // Base: tarif unique
+        $energyCost = $consumptionKwh * $rateHP;
+    }
+    
+    // Ajouter la part d'abonnement journalier (environ 1/30 de l'abonnement mensuel)
+    $subscribedPower = config::byKey('subscribedPower', 'iotawatt', 6);
+    $subscriptionMonthly = 12.0; // Approximation pour 6 kVA
+    $subscriptionDaily = $subscriptionMonthly / 30;
+    
+    $totalCost = $energyCost + $subscriptionDaily;
+    
+    return $totalCost;
+}
+
+/**
+ * Calcule la couleur basée sur le pourcentage
+ * @param float $pourcent
+ * @return string
+ */
+function getColorForPourcentage($pourcent) {
+    return IotawattPowerData::getColorForPourcentage($pourcent);
+}
+
+/**
+ * Échappe les données HTML
+ * @param mixed $value
+ * @return string
+ */
+function h($value) {
+    return htmlspecialchars($value ?? '', ENT_QUOTES, 'UTF-8');
+}
+
+/**
+ * Affiche une cellule de configuration
+ * @param array $data
+ * @return string
+ */
+function renderConfigCell($data) {
+    $html = '<td>';
+    if (!empty($data['id'])) {
+        $html .= sprintf(
+            '<a class="btn btn-default btn-xs tooltipstered eqLogicAction roundedLeft" data-id="%s" data-action="configureEqLogic" title="{{Configuration de l\'équipement}}"><i class="fas fa-cogs"></i></a>',
+            h($data['id'])
+        );
+        $html .= $data['eqLink'];
+    }
+    $html .= '</td>';
+    return $html;
+}
+
+/**
+ * Affiche une cellule de nom avec icônes
+ * @param array $data
+ * @return string
+ */
+function renderNameCell($data) {
+    $html = '<td>';
+    
+    // Boutons de configuration des commandes
+    if (!empty($data['powerId']) || !empty($data['consoId'])) {
+        $html .= '<div class="input-group" style="display:inline-flex;">';
+        
+        if (!empty($data['powerId'])) {
+            $html .= sprintf(
+                '<a class="btn btn-default btn-xs tooltipstered cmdAction roundedLeft" data-cmd_id="%s" data-action="configure" title="{{Configuration de la commande de puissance}}"><i class="icon kiko-lightning"></i></a>',
+                h($data['powerId'])
+            );
+        }
+        
+        if (!empty($data['consoId'])) {
+            $html .= sprintf(
+                '<a class="btn btn-default btn-xs tooltipstered cmdAction roundedRight" data-cmd_id="%s" data-action="configure" title="{{Configuration de la commande de consommation}}"><i class="icon kiko-electricity"></i></a>',
+                h($data['consoId'])
+            );
+        }
+        
+        $html .= '</div>';
+    }
+    
+    // Icône spéciale pour Linky
+    if (!empty($data['isLinky'])) {
+        $html .= '<span class="iconPowerConso"><i class="fas fa-bolt" style="color: #ffc107;"></i></span>';
+    }
+    // Icône spéciale pour Total
+    elseif (!empty($data['isTotal'])) {
+        $html .= '<span class="iconPowerConso"><i class="fas fa-calculator" style="color: #333;"></i></span>';
+    }
+    // Icône normale
+    else {
+        $icon = $data['powerIcon'] ?? $data['consoIcon'] ?? '';
+        if (!empty($icon)) {
+            $html .= '<span class="iconPowerConso">' . $icon . '</span>';
         }
     }
-    $hue = max(0, min(120, 120 - $hue));
-    $color = "hsl(" . $hue . ", 100%, " . $light . "% )";
-    return $color;
+    
+    // Nom
+    $name = $data['consoName'] ?? $data['powerName'] ?? '';
+    $name = str_replace([__('Consommation', __FILE__), __('Puissance', __FILE__)], '', $name);
+    $isTotal = empty($data['id']) ? 1 : 0;
+    $html .= sprintf('<span class="namePowerConso" data-total="%d">%s</span>', $isTotal, $name);
+    
+    $html .= '</td>';
+    return $html;
+}
+
+/**
+ * Affiche une cellule de puissance
+ * @param array $data
+ * @param array $logos
+ * @return string
+ */
+function renderPowerCell($data, $logos) {
+    $html = '<td>';
+    
+    if (empty($data['powerId'])) {
+        // Affichage du total
+        $html .= sprintf(
+            '<div class="cmd label label-info cursor history power" data-action="powerSum">%s %s</div>',
+            h($data['power']),
+            h($data['powerUnit'])
+        );
+    } else {
+        $isLinky = !empty($data['isLinky']) ? 1 : 0;
+        
+        // Logo de tendance avant si Linky
+        if ($isLinky) {
+            $html .= '<span class="floatRight">' . $data['logoTendancePower'] . '</span>';
+        }
+        
+        // Valeur de puissance
+        $title = sprintf(
+            '{{Date de collecte : }}%s<br/>{{Date de valeur : }}%s',
+            h($data['powerCollectDate']),
+            h($data['powerValueDate'])
+        );
+        $html .= sprintf(
+            '<div class="cmd label cursor history power" data-linky="%d" data-cmd_id="%s" title="%s">%s %s</div> ',
+            $isLinky,
+            h($data['powerId']),
+            $title,
+            h($data['power']),
+            h($data['powerUnit'])
+        );
+        
+        // Logo de tendance après si non-Linky
+        if (!$isLinky) {
+            $html .= $data['logoTendancePower'];
+        }
+    }
+    
+    $html .= '</td>';
+    return $html;
+}
+
+/**
+ * Affiche une cellule de consommation d'hier
+ * @param array $data
+ * @return string
+ */
+function renderConsoYesterdayCell($data) {
+    $html = '<td>';
+    
+    if (empty($data['consoId'])) {
+        // Placeholder pour le total
+        $html .= '<div class="cmd label label-info consoTotY" data-action="totalYesterday"></div>';
+        $html .= '<div class="cmd label label-info consoTotY-cost" data-action="totalYesterday" style="display: none; margin-top: 2px;"></div>';
+    } else {
+        $stats = IotawattPowerData::calculateConsoStats($data);
+        $valueInfoYest = cmd::autoValueArray($stats['yesterday'], 2, $data['consoOldUnit']);
+        $isLinky = !empty($data['isLinky']) ? 1 : 0;
+        
+        // Calculer le coût d'hier
+        // Linky retourne déjà des kWh, les autres retournent des Wh
+        $yesterdayKwh = $isLinky ? $stats['yesterday'] : ($stats['yesterday'] / 1000);
+        $yesterday = date('Y-m-d', strtotime('-1 day'));
+        $costYesterday = calculateDailyCost($yesterdayKwh, $yesterday);
+        
+        $html .= sprintf(
+            '<div class="cmd label label-info cursor history consoTotY" data-linky="%d" data-cmd_id="%s" data-kwh="%s">%s %s</div>',
+            $isLinky,
+            h($data['consoId']),
+            $yesterdayKwh,
+            h($valueInfoYest[0]),
+            h($valueInfoYest[1])
+        );
+        
+        $html .= sprintf(
+            '<div class="cmd label label-info cursor history consoTotY-cost" data-linky="%d" data-cmd_id="%s" data-cost="%s" style="display: none; margin-top: 2px;">%s €</div>',
+            $isLinky,
+            h($data['consoId']),
+            $costYesterday,
+            number_format($costYesterday, 2)
+        );
+    }
+    
+    $html .= '</td>';
+    return $html;
+}
+
+/**
+ * Affiche une cellule de consommation du jour avec pourcentage
+ * @param array $data
+ * @return string
+ */
+function renderConsoTodayCell($data) {
+    $html = '<td>';
+    
+    if (empty($data['consoId'])) {
+        // Placeholder pour le total
+        $html .= '<div class="cmd label label-info consoTotT" data-action="totalDay"></div>';
+        $html .= '<div class="cmd label label-info consoTotT-cost" data-action="totalDay" style="display: none; margin-top: 2px;"></div>';
+        $html .= '<div class="cmd label consoTotPourcent" data-action="sum"></div>';
+    } else {
+        $stats = IotawattPowerData::calculateConsoStats($data);
+        $valueInfoT = cmd::autoValueArray($stats['today'], 2, $data['consoOldUnit'] ?? 'Wh');
+        $consoTodayVal = round($valueInfoT[0], 2);
+        $consoPourcent = $stats['percentage'];
+        
+        // Calculer le coût du jour
+        // Linky retourne déjà des kWh, les autres retournent des Wh
+        $todayKwh = $isLinky ? $stats['today'] : ($stats['today'] / 1000);
+        $today = date('Y-m-d');
+        $costToday = calculateDailyCost($todayKwh, $today);
+        
+        // Formater le pourcentage avec signe
+        $posConsoPourcent = ($consoPourcent > 0 ? '+' : '') . number_format($consoPourcent, 2, '.', '');
+        $isLinky = !empty($data['isLinky']) ? 1 : 0;
+        
+        $html .= sprintf(
+            '<div class="cmd label label-info cursor history consoTotT" data-linky="%d" data-cmd_id="%s" data-kwh="%s">%s %s</div>',
+            $isLinky,
+            h($data['consoId']),
+            $todayKwh,
+            h($consoTodayVal),
+            h($valueInfoT[1])
+        );
+        
+        $html .= sprintf(
+            '<div class="cmd label label-info cursor history consoTotT-cost" data-linky="%d" data-cmd_id="%s" data-cost="%s" style="display: none; margin-top: 2px;">%s €</div>',
+            $isLinky,
+            h($data['consoId']),
+            $costToday,
+            number_format($costToday, 2)
+        );
+        
+        $color = IotawattPowerData::getColorForPourcentage($consoPourcent);
+        $html .= sprintf(
+            '<div class="cmd label label-info cursor history consoTotPourcent" data-linky="%d" style="background-color:%s !important;" data-cmd_id="%s">%s %%</div>',
+            $isLinky,
+            h($color),
+            h($data['consoId']),
+            h($posConsoPourcent)
+        );
+    }
+    
+    $html .= '</td>';
+    return $html;
 }
 
 ?>
-  <style>
-    .tablesorter-resizable-container {
-        display: none;
-    }
-    .scanHender{
-        cursor: pointer !important;
-        width: 100%;
-    }
-    .power,
-    .conso,
-    .consoTotY,
-    .consoTotT,
-    .consoTotPourcent,
-    .consoSumPourcent,
-    .consoLinkyPourcent {
-        color: var(--linkHoverLight-color) !important;
-    }
-    .iconPowerConso {
-        font-size: 24px;
-    }
-    .iconPowerConso i {
-        display: inline-block;
-        width: 2em;
-        text-align: center;
-        border: 1px solid silver;
-        border-radius: 0.25em;
-    }
-    .cmd.consoTotY[data-action="totalYesterday"],
-    .cmd.consoTotY[data-linky="1"],
-    .floatRight,
-    .namePowerConso[data-total="1"],
-    .cmd.power[data-linky="1"] {
-        float: right;
-    }
-    .redTendance {
-        background-color: var(--al-danger-color) !important;
-    }
-    .blueTendance {
-        background-color: var(--al-info-color) !important;
-    }
-    .greenTendance {
-        background-color: var(--bt-success-color) !important;
-    }
-    .cmd.power[data-action="powerSum"] {
-        float: right;
-        background-color: black!important;
-        color: white!important;
-        font-size: 1.5em !important;
-        font-weight: bolder;
-    }
+<style>
+.tablesorter-resizable-container {
+    display: none;
+}
+.scanHender {
+    cursor: pointer !important;
+    width: 100%;
+}
+.power,
+.conso,
+.consoTotY,
+.consoTotT,
+.consoTotPourcent,
+.consoSumPourcent,
+.consoLinkyPourcent {
+    color: var(--linkHoverLight-color) !important;
+}
+.iconPowerConso {
+    font-size: 24px;
+}
+.iconPowerConso i {
+    display: inline-block;
+    width: 2em;
+    text-align: center;
+    border: 1px solid silver;
+    border-radius: 0.25em;
+}
+.cmd.consoTotY[data-action="totalYesterday"],
+.cmd.consoTotY[data-linky="1"],
+.floatRight,
+.namePowerConso[data-total="1"],
+.cmd.power[data-linky="1"] {
+    float: right;
+}
+.redTendance {
+    background-color: var(--al-danger-color) !important;
+}
+.blueTendance {
+    background-color: var(--al-info-color) !important;
+}
+.greenTendance {
+    background-color: var(--bt-success-color) !important;
+}
+.cmd.power[data-action="powerSum"] {
+    float: right;
+    background-color: black !important;
+    color: white !important;
+    font-size: 1.5em !important;
+    font-weight: bolder;
+}
+.linky-row {
+    background-color: rgba(255, 193, 7, 0.1) !important;
+    border-top: 2px solid #ffc107 !important;
+    border-bottom: 2px solid #ffc107 !important;
+    box-shadow: 0 2px 4px rgba(255, 193, 7, 0.2);
+}
+.linky-row td {
+    font-weight: bold !important;
+    padding: 12px 8px !important;
+}
+.linky-row:hover {
+    background-color: rgba(255, 193, 7, 0.15) !important;
+}
+.total-row {
+    background-color: rgba(0, 0, 0, 0.05) !important;
+    border-top: 2px solid #333 !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+.total-row td {
+    font-weight: bold !important;
+    padding: 12px 8px !important;
+}
+.total-row:hover {
+    background-color: rgba(0, 0, 0, 0.08) !important;
+}
 </style>
+
+<div style="margin-bottom: 15px; text-align: right;">
+    <label id="toggleValueType" class="toggle-switch" style="display: inline-flex; align-items: center; cursor: pointer; user-select: none; background: rgba(74, 158, 255, 0.1); padding: 8px 15px; border-radius: 20px; font-weight: 600;">
+        <span style="margin-right: 10px; color: var(--txt-color);">kWh</span>
+        <div style="position: relative; width: 50px; height: 24px; background: #ccc; border-radius: 12px; transition: background 0.3s;">
+            <input type="checkbox" style="opacity: 0; width: 0; height: 0;">
+            <span style="position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; background: white; border-radius: 50%; transition: transform 0.3s; box-shadow: 0 2px 4px rgba(0,0,0,0.2);"></span>
+        </div>
+        <span style="margin-left: 10px; color: var(--txt-color);">€</span>
+    </label>
+</div>
+
 <table class="table table-condensed tablesorter" id="table_poweriotawatt">
-	<thead>
-		<tr>
-			<th><span class="scanHender">{{Appareil IoTaWatt}}</span></th>
-			<th><span class="scanHender">{{Nom}}</span></th>
-			<th class="string-max"><span class="scanHender">{{Puissance}}</span></th>
-			<!--th><span class="scanHender">{{Consommation Totale}}</span></th--!>
-			<th><span class="scanHender">{{Consommation hier (0h-24h)}}</span></th>
-			<th><span class="scanHender">{{Consommation du jour (0h-24h)}}</span></th>
-		</tr>
-	</thead>
-	<tbody>
-      <?php
-        $cmdArray = array();
-        $totalPower = 0;
-        $startHist = date('Y-m-d H:i:s', strtotime(date('Y-m-d H:i:s') . ' -' . config::byKey('historyCalculTendance') . ' hour'));
-        foreach ($eqLogics as $eqLogic) {
-            if ($eqLogic->getIsEnable()) {
-                foreach ($eqLogic->getCmd('info') as $cmd) {
-                    if ($cmd->getConfiguration('type') == 'input') {
-                        //if ($cmd->getConfiguration('serie') == 'Tension') continue;
-                        if (!$cmd->getDisplay('showOnPanel')) continue;
-                        $cmdArray[$eqLogic->getId().'::'.$cmd->getConfiguration('serie')]['id'] = $eqLogic->getId();
-                        $cmdArray[$eqLogic->getId().'::'.$cmd->getConfiguration('serie')]['eqName'] = $eqLogic->getConfiguration('name');
-                        $cmdArray[$eqLogic->getId().'::'.$cmd->getConfiguration('serie')]['channel'] = $cmd->getConfiguration('channel');
-                        $cmdArray[$eqLogic->getId().'::'.$cmd->getConfiguration('serie')]['eqLink'] = '<a href="' . $eqLogic->getLinkToConfiguration() . '" class="btn btn-xs btn-primary">' . $eqLogic->getHumanName(true,false,true) . '</a><br/>';
-
-                        if ($cmd->getConfiguration('totalConsumption', false)) {
-                          	$valueInfo = cmd::autoValueArray($cmd->execCmd(), 2, $cmd->getUnite());
-                            $cmdArray[$eqLogic->getId().'::'.$cmd->getConfiguration('serie')]['conso'] = $valueInfo[0];
-                            $cmdArray[$eqLogic->getId().'::'.$cmd->getConfiguration('serie')]['consoUnit'] = $valueInfo[1];
-                            $cmdArray[$eqLogic->getId().'::'.$cmd->getConfiguration('serie')]['consoOldUnit'] = $cmd->getUnite();
-                            $cmdArray[$eqLogic->getId().'::'.$cmd->getConfiguration('serie')]['consoId'] = $cmd->getId();
-                            $cmdArray[$eqLogic->getId().'::'.$cmd->getConfiguration('serie')]['consoName'] = $cmd->getName();
-                            $cmdArray[$eqLogic->getId().'::'.$cmd->getConfiguration('serie')]['consoCollectDate'] = $cmd->getCollectDate();
-                            $cmdArray[$eqLogic->getId().'::'.$cmd->getConfiguration('serie')]['consoValueDate'] = $cmd->getValueDate();
-                            $consoTendance = $cmd->getTendance($startHist, date('Y-m-d H:i:s'));
-                            $cmdArray[$eqLogic->getId().'::'.$cmd->getConfiguration('serie')]['consoTendance'] = $consoTendance;
-                            $cmdArray[$eqLogic->getId().'::'.$cmd->getConfiguration('serie')]['logoTendanceConso'] = ($consoTendance > $historyCalculTendanceThresholddMax) ? $logo['arrowUp'] : (($consoTendance < $historyCalculTendanceThresholddMin) ? $logo['arrowDown'] : $logo['minus']);                             $cmdArray[$eqLogic->getId().'::'.$cmd->getConfiguration('serie')]['consoIcon'] = $cmd->getDisplay('icon', '');
-                            $cmdArray[$eqLogic->getId().'::'.$cmd->getConfiguration('serie')]['consoStats'] = $cmd->getStatistique(date('Y-m-d 00:00:00', strtotime('- 1 day')), date('Y-m-d 00:00:00'));
-                        } else {
-                          	$valueInfo = cmd::autoValueArray($cmd->execCmd(), 2, $cmd->getUnite());
-                            $cmdArray[$eqLogic->getId().'::'.$cmd->getConfiguration('serie')]['power'] = $valueInfo[0];
-                            $cmdArray[$eqLogic->getId().'::'.$cmd->getConfiguration('serie')]['powerUnit'] = $valueInfo[1];
-                            $cmdArray[$eqLogic->getId().'::'.$cmd->getConfiguration('serie')]['powerOldUnit'] = $cmd->getUnite();
-                            $cmdArray[$eqLogic->getId().'::'.$cmd->getConfiguration('serie')]['powerId'] = $cmd->getId();
-                            $cmdArray[$eqLogic->getId().'::'.$cmd->getConfiguration('serie')]['powerName'] = $cmd->getName();
-                            $cmdArray[$eqLogic->getId().'::'.$cmd->getConfiguration('serie')]['powerCollectDate'] = $cmd->getCollectDate();
-                            $cmdArray[$eqLogic->getId().'::'.$cmd->getConfiguration('serie')]['powerValueDate'] = $cmd->getValueDate();
-                            $powerTendance = $cmd->getTendance($startHist, date('Y-m-d H:i:s'));
-                            $cmdArray[$eqLogic->getId().'::'.$cmd->getConfiguration('serie')]['powerTendance'] = $powerTendance;
-                            $cmdArray[$eqLogic->getId().'::'.$cmd->getConfiguration('serie')]['logoTendancePower'] = ($powerTendance > $historyCalculTendanceThresholddMax) ? $logo['arrowUp'] : (($powerTendance < $historyCalculTendanceThresholddMin) ? $logo['arrowDown'] : $logo['minus']);
-                            $cmdArray[$eqLogic->getId().'::'.$cmd->getConfiguration('serie')]['powerIcon'] = $cmd->getDisplay('icon', '');
-                            $totalPower += $cmdArray[$eqLogic->getId().'::'.$cmd->getConfiguration('serie')]['power'];
-                        }
-                    }
-                }
+    <thead>
+        <tr>
+            <th><span class="scanHender">{{Appareil IoTaWatt}}</span></th>
+            <th><span class="scanHender">{{Nom}}</span></th>
+            <th class="string-max"><span class="scanHender">{{Puissance}}</span></th>
+            <th><span class="scanHender">{{Consommation hier (0h-24h)}}</span></th>
+            <th><span class="scanHender">{{Consommation du jour (0h-24h)}}</span></th>
+        </tr>
+    </thead>
+    <tbody>
+        <?php foreach ($cmdArray as $id => $value): 
+            // Déterminer la classe CSS de la ligne
+            $rowClass = '';
+            if (!empty($value['isLinky'])) {
+                $rowClass = 'linky-row';
+            } elseif (!empty($value['isTotal'])) {
+                $rowClass = 'total-row';
             }
-        }
-        $idPowerLinky = str_replace('#','',config::byKey('powerLinky', 'iotawatt'));
-        $idLinky = str_replace('#','',config::byKey('linky', 'iotawatt'));
-        if ($idPowerLinky != '' || $idLinky != '') {
-            $cmdPowerLinky = cmd::byId($idPowerLinky);
-            $cmdArray['000000::Linky']['isLinky'] = 1;
-            if (is_object($cmdPowerLinky)) {
-                $cmdArray['000000::Linky']['power'] = $linkyValue;
-                $cmdArray['000000::Linky']['powerId'] = $idPowerLinky;
-                $valuePower = cmd::autoValueArray($cmdPowerLinky->execCmd(), 2, $cmdPowerLinky->getUnite());
-                $cmdArray['000000::Linky']['power'] = $valuePower[0];
-                $cmdArray['000000::Linky']['powerUnit'] = $valuePower[1];
-                $cmdArray['000000::Linky']['powerOldUnit'] = $cmdPowerLinky->getUnite();
-                $cmdArray['000000::Linky']['powerCollectDate'] = $cmdPowerLinky->getCollectDate();
-                $cmdArray['000000::Linky']['powerValueDate'] = $cmdPowerLinky->getValueDate();
-                $powerTendance = $cmdPowerLinky->getTendance($startHist, date('Y-m-d H:i:s'));
-                $cmdArray['000000::Linky']['powerTendance'] = $powerTendance;
-                $cmdArray['000000::Linky']['logoTendancePower'] = ($powerTendance > $historyCalculTendanceThresholddMax) ? $logo['arrowUp'] : (($powerTendance < $historyCalculTendanceThresholddMin) ? $logo['arrowDown'] : $logo['minus']);
-                $cmdArray['000000::Linky']['powerIcon'] = $cmdPowerLinky->getDisplay('icon', '');
-            }
-            $cmdConsoLinky = cmd::byId($idLinky);
-            if (is_object($cmdConsoLinky)) {
-                $cmdArray['000000::Linky']['consoId'] = $idLinky;
-                $valueConso = cmd::autoValueArray($cmdConsoLinky->execCmd(), 2, $cmdConsoLinky->getUnite());
-                $cmdArray['000000::Linky']['conso'] = $valueConso[0];
-                $cmdArray['000000::Linky']['consoUnit'] = $valueConso[1];
-                $cmdArray['000000::Linky']['consoOldUnit'] = $cmdConsoLinky->getUnite();
-                $cmdArray['000000::Linky']['consoName'] = '<strong>{{Compteur Linky}}</strong>';
-                $cmdArray['000000::Linky']['consoCollectDate'] = $cmdConsoLinky->getCollectDate();
-                $cmdArray['000000::Linky']['consoValueDate'] = $cmdConsoLinky->getValueDate();
-                $consoTendance = $cmdConsoLinky->getTendance($startHist, date('Y-m-d H:i:s'));
-                $cmdArray['000000::Linky']['consoTendance'] = $consoTendance;
-                $cmdArray['000000::Linky']['logoTendanceConso'] = ($consoTendance > $historyCalculTendanceThresholddMax) ? $logo['arrowUp'] : (($consoTendance < $historyCalculTendanceThresholddMin) ? $logo['arrowDown'] : $logo['minus']);
-                $cmdArray['000000::Linky']['consoIcon'] = $cmdConsoLinky->getDisplay('icon', '');
-                $cmdArray['000000::Linky']['consoStats'] = $cmdConsoLinky->getStatistique(date('Y-m-d 00:00:00', strtotime('- 1 day')), date('Y-m-d 00:00:00'));
-            }
-            if (is_object($eqLinky = $cmdPowerLinky->getEqLogic())) {
-                $cmdArray['000000::Linky']['id'] = $eqLinky->getId();
-                $cmdArray['000000::Linky']['eqName'] = $eqLinky->getConfiguration('name');
-                $cmdArray['000000::Linky']['eqLink'] = '<a href="' . $eqLinky->getLinkToConfiguration() . '" class="btn btn-xs btn-primary">' . $eqLinky->getHumanName(true,false,true) . '</a><br/>';
-            }
-        }
-
-        if (config::byKey('sumTotal', 'iotawatt', true)) {
-            $cmdArray['000000::Somme']['consoName'] = '<strong>{{TOTAL IoTaWatt}}</strong>';
-            $cmdArray['000000::Somme']['power'] = round($totalPower,2);
-            $cmdArray['000000::Somme']['powerUnit'] = 'W';
-        }
-
-        echo '<div class="eqLogic-widget">';
-        foreach ($cmdArray as $id => $value) {
-            echo '<tr>';
-
-            echo '  <td>';
-            if ($value['id'] != '') {
-                echo '    <a class="btn btn-default btn-xs tooltipstered eqLogicAction roundedLeft" data-id="' . $value['id'] . '" data-action="configureEqLogic" title="{{Configuration de l\'équipement}}"><i class="fas fa-cogs"></i></a>';
-                echo $value['eqLink'];
-            }
-            //echo ' [' . $value['eqName'] . ']</span>';
-            echo '  </td>';
-
-            echo '  <td>';
-            echo '    <div class="input-group" style="display:inline-flex;">';
-            if ($value['powerId'] != '') {
-                echo '      <a class="btn btn-default btn-xs tooltipstered cmdAction roundedLeft" data-cmd_id="' . $value['powerId'] . '" data-action="configure" title="{{Configuration de la commande de puissance}}"><i class="icon kiko-lightning"></i></a>';
-            }
-            if ($value['consoId'] != '') {
-                echo '      <a class="btn btn-default btn-xs tooltipstered cmdAction roundedRight" data-cmd_id="' . $value['consoId'] . '" data-action="configure" title="{{Configuration de la commande de consommation}}"><i class="icon kiko-electricity"></i></a>';
-            }
-            echo '    </div>';
-            if ($value['consoIcon'] != '') {
-                echo '    <span class="iconPowerConso">' . ($value['powerIcon']?:$value['consoIcon']) . '</span>';
-            }
-            echo '    <span class="namePowerConso" data-total="' . ($value['id']==''?1:0) . '">' . str_replace(array(__('Consommation', __FILE__),__('Puissance', __FILE__)), '', $value['consoName']) . '</span>';
-            echo '  </td>';
-
-            echo '  <td>';
-            if ($value['powerId'] == '') { // TOTAL
-                echo '    <div class="cmd label label-info cursor history power" data-action="powerSum">' . $value['power'] . ' ' . $value['powerUnit'] . '</div> ';
-            } else {
-                if ($value['isLinky']) {
-                    echo '<span class="floatRight">' . $logoTendancePower . '</span>';
-                }
-                $logoTendancePower = ($value['powerTendance'] > $historyCalculTendanceThresholddMax) ? $logo['arrowUp'] :
-                                 (($value['powerTendance'] < $historyCalculTendanceThresholddMin) ? $logo['arrowDown'] : $logo['minus']);
-                echo '    <div class="cmd label cursor history power" data-linky="'.$value['isLinky'].'" data-cmd_id="' . $value['powerId'] . '" title="{{Date de collecte : }}' . $value['powerCollectDate'] . '<br/>{{Date de valeur : }} ' . $value['powerValueDate'] . '">' . $value['power'] . ' ' . $value['powerUnit'] . '</div> ';
-                if (!$value['isLinky']) {
-                    echo $logoTendancePower;
-                }
-            }
-            echo '  </td>';
-
-            /*echo '  <td>';
-            if ($value['consoId'] != '') { // retire la conso totale
-                echo '    <div class="cmd label cursor history conso" style="background-color:' . getColorForTendance($value['consoTendance']) . ' !important;" data-cmd_id="' . $value['consoId'] . '">' . $value['conso'] . ' ' . $value['consoUnit'] . '</div> ';
-            } else {
-                $logoTendanceConso = ($value['consoTendance'] > $historyCalculTendanceThresholddMax) ? $logo['arrowUp'] :
-                                 (($value['consoTendance'] < $historyCalculTendanceThresholddMin) ? $logo['arrowDown'] : $logo['minus']);
-                echo '    <div class="cmd label cursor history conso" style="background-color:' . getColorForTendance($value['consoTendance']) . ' !important;" data-cmd_id="' . $value['consoId'] . '" title="{{Date de collecte : }}' . $value['consoCollectDate'] . '<br/>{{Date de valeur : }} ' . $value['consoValueDate'] . '">' . $value['conso'] . ' ' . $value['consoUnit'] . '</div> ' . $logoTendanceConso;
-            }
-            echo '  </td>';*/
-
-            echo '  <td>';
-            if ($value['consoId'] == '') { // TOTAL
-                echo '    <div class="cmd label label-info consoTotY" data-action="totalYesterday"></div>';
-            } else {
-                $consoYesterday = ($value['consoStats']['max'] - $value['consoStats']['min']);
-                $valueInfoYest = cmd::autoValueArray($consoYesterday, 2, $value['consoOldUnit']);
-                echo '    <div class="cmd label label-info cursor history consoTotY" data-linky="'.$value['isLinky'].'" data-cmd_id="' . $value['consoId'] . '">' . $valueInfoYest[0] . ' ' . $valueInfoYest[1] . '</div>';
-            }
-            echo '  </td>';
-
-            echo '  <td>';
-            if ($value['consoId'] == '') { // TOTAL
-                echo '    <div class="cmd label label-info consoTotT" data-action="totalDay"></div>';
-                echo '    <div class="cmd label consoTotPourcent" data-action="sum"></div>';
-            } else {
-                //$valueInfoDiff = ($value['consoUnit']=='kWh'?($value['conso']*1000):$value['conso']) - $value['consoStats']['max'];
-                $valueInfoDiff = ($value['consoUnit']!=$value['consoOldUnit']?($value['conso']*1000):$value['conso']) - $value['consoStats']['max'];
-                $valueInfoT = cmd::autoValueArray($valueInfoDiff, 2, $value['consoOldUnit']);
-                $consoTodayVal = round($valueInfoT[0], 2);
-                $consoPourcent = round(100 * $valueInfoDiff / ($consoYesterday),2) - 100;
-                $posConsoPourcent = $consoPourcent > 0 ? '+' . $consoPourcent : $consoPourcent;
-                echo '    <div class="cmd label label-info cursor history consoTotT" data-linky="'.$value['isLinky'].'" data-cmd_id="' . $value['consoId'] . '">' . $consoTodayVal . ' ' . $valueInfoT[1] . '</div>';
-                echo '    <div class="cmd label label-info cursor history consoTotPourcent" data-linky="'.$value['isLinky'].'" style="background-color:' . getColorForPourcentage($consoPourcent) . ' !important;" data-cmd_id="' . $value['consoId'] . '">' . $posConsoPourcent .  ' %</div>';
-            }
-
-            echo '  </td>';
-
-            echo '</tr>';
-        }
-        echo '</div>';
         ?>
-	</tbody>
+            <tr class="<?php echo $rowClass; ?>">
+                <?php 
+                echo renderConfigCell($value);
+                echo renderNameCell($value);
+                echo renderPowerCell($value, $logos);
+                echo renderConsoYesterdayCell($value);
+                echo renderConsoTodayCell($value);
+                ?>
+            </tr>
+        <?php endforeach; ?>
+    </tbody>
 </table>
+
 <?php
 include_file('desktop', 'power', 'js', 'iotawatt');
 ?>

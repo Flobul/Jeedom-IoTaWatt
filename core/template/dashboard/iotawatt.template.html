@@ -1,0 +1,884 @@
+<div class="eqLogic eqLogic-widget allowResize allowReorderCmd #custom_layout# #class# #eqLogic_class#" 
+     data-eqType="#eqType#" data-eqLogic_id="#id#" data-eqLogic_uid="#uid#" data-version="#version#" 
+     data-translate-category="#translate_category#" data-category="#category#" data-tags="#tags#" 
+     style="width: #width#; height: #height#; margin: 4px; padding: 0px; #style#">
+
+    <center class="widget-name">
+        <span class="classTitreIcon#id# pull-left cursor" id="idConnected#id#" title="{{État de connexion}}">
+        </span>
+        <span class="classTitreIcon#id# pull-left cursor" id="idOpenGraph#id#" title="{{Graphiques}}">
+            <i class="fas fa-chart-area"></i>
+        </span>
+        <span class="classTitreIcon#id# pull-left cursor" id="idOpenPower#id#" title="{{Puissances}}">
+            <i class="fas fa-bolt"></i>
+        </span>
+        <span class="classTitreIcon#id# pull-right" id="idTogglePage#id#" title="{{Basculer vue}}">
+            <i class="fas fa-plug"></i>
+        </span>
+        <span class="cmd classTitreIcon#id# refresh pull-right cursor" title="{{Rafraîchir}}" data-cmd_id="#cmd_refresh_id#">
+            <i class="fas fa-sync"></i>
+        </span>
+        <span class="reportModeVisible">#name_display# <span class="object_name">#object_name#</span></span>
+        <a href="#eqLink#" class="reportModeHidden">#name_display# <span class="object_name">#object_name#</span></a>
+    </center>
+    <style>
+        /* Base styles */
+        .eqLogic[data-eqLogic_id="#id#"] {
+            background: var(--eqBg-color);
+            border: 1px solid var(--eqBorder-color);
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        [data-theme="core2019_Dark"] .eqLogic[data-eqLogic_id="#id#"] {
+            background: var(--eqBg-color);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Header icons */
+        #idConnected#id# > i {
+            margin-top: -2px;
+            font-size: 16px;
+        }
+        
+        .classTitreIcon#id#.pull-right {
+            margin-top: 3px !important;
+            right: 0;
+            cursor: pointer !important;
+        }
+        
+        .classTitreIcon#id#.pull-left {
+            margin-top: 3px !important;
+            margin-left: 3px;
+            cursor: pointer !important;
+        }
+        
+        .classTitreIcon#id# > i:hover {
+            opacity: .85;
+            color: #4a9eff !important;
+        }
+        
+        .classTitreIcon#id# > i {
+            font-size: 1.1em;
+            color: var(--eqTitle-color);
+        }
+        
+        #idTogglePage#id# {
+            padding: 0px 10px 0px 2px;
+        }
+        
+        #idTogglePage#id# > i {
+            color: #063b78 !important;
+        }
+        
+        #idOpenGraph#id#, #idOpenPower#id# {
+            margin-left: 5px;
+        }
+      
+        div.eqLogic-widget.editingMode .classTitreIcon#id# {
+            display: none;
+        }
+
+        /* Content sections */
+        .iotawatt-section#id# {
+            padding: 0 15px;
+        }
+
+        .iotawatt-row#id# {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(128, 128, 128, 0.2);
+        }
+
+        .iotawatt-row#id#:last-child {
+            border-bottom: none;
+        }
+
+        .iotawatt-label#id# {
+            font-size: 13px;
+            color: var(--txt-color);
+            font-weight: 500;
+        }
+
+        [data-theme="core2019_Dark"] .iotawatt-label#id# {
+            color: var(--txt-color);
+        }
+
+        .iotawatt-value#id# {
+            font-size: 15px;
+            font-weight: 700;
+            color: #4a9eff;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        [data-theme="core2019_Dark"] .iotawatt-value#id# {
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+        }
+
+        .unit#id# {
+            color: var(--txt-color);
+            font-size: 11px;
+            font-weight: 600;
+            margin-left: 3px;
+            opacity: 0.8;
+        }
+
+        /* Container for cards */
+        #iotawatt-inputs-container#id# {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+
+        #iotawatt-inputs-container#id# h4 {
+            flex-basis: 100%;
+        }
+        
+        /* Input cards - Largeur fixe 160px */
+        .iotawatt-input-card#id# {
+            background: linear-gradient(135deg, rgba(74, 158, 255, 0.1) 0%, rgba(74, 158, 255, 0.05) 100%);
+            border-radius: 6px;
+            padding: 2px 4px;
+            margin: 0;
+            border-left: 2px solid #4a9eff;
+            transition: all 0.3s ease;
+            width: 32%;
+            flex: 0 0 32%;
+        }
+
+        .iotawatt-input-card#id#:hover {
+            box-shadow: 0 2px 8px rgba(74, 158, 255, 0.4);
+            opacity: 0.9;
+        }
+
+        [data-theme="core2019_Dark"] .iotawatt-input-card#id# {
+            background: linear-gradient(135deg, rgba(74, 158, 255, 0.15) 0%, rgba(74, 158, 255, 0.08) 100%);
+        }
+
+        .iotawatt-input-header#id# {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0px;
+            line-height: 1;
+        }
+
+        .iotawatt-input-name#id# {
+            font-size: 9px;
+            font-weight: 600;
+            color: var(--txt-color);
+            line-height: 1;
+        }
+
+        .iotawatt-input-channel#id# {
+            background: #4a9eff;
+            color: white;
+            padding: 1px 3px;
+            border-radius: 2px;
+            font-size: 7px;
+            font-weight: 600;
+            line-height: 1;
+            white-space: nowrap;
+        }
+        
+        /* Main line - Puissance et Consommation en colonne */
+        .iotawatt-main-line#id# {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            margin: 2px 0;
+            padding: 2px 0;
+        }
+        
+        .iotawatt-main-value#id# {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            line-height: 1.1;
+        }
+        
+        .iotawatt-main-label#id# {
+            font-size: 7px;
+            color: var(--txt-color);
+            opacity: 0.7;
+            margin-bottom: 1px;
+            line-height: 1;
+        }
+        
+        .iotawatt-main-number#id# {
+            font-size: 13px;
+            font-weight: 700;
+            color: #4a9eff;
+            line-height: 1.1;
+        }
+
+        .iotawatt-input-values#id# {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1px;
+            margin-top: 0px;
+        }
+
+        .iotawatt-input-item#id# {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 0px;
+            line-height: 1;
+            flex: 1 1 48%;
+            min-width: 0;
+        }
+
+        .iotawatt-input-item-label#id# {
+            font-size: 6px;
+            color: var(--txt-color);
+            opacity: 0.7;
+            margin-bottom: 0px;
+            line-height: 1;
+        }
+
+        .iotawatt-input-item-value#id# {
+            font-size: 11px;
+            font-weight: 700;
+            color: #4a9eff;
+            line-height: 1;
+        }
+        
+        /* Global duet navigation buttons */
+        .iotawatt-global-duet-nav#id# {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            padding: 5px;
+            border-radius: 4px;
+        }
+        
+        .iotawatt-global-duet-btn#id# {
+            background: rgba(128, 128, 128, 0.2);
+            color: var(--txt-color);
+            border: none;
+            border-radius: 4px;
+            padding: 6px 16px;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex: 1;
+            max-width: 120px;
+        }
+        
+        .iotawatt-global-duet-btn#id#:hover {
+            opacity: 0.85;
+            transform: translateY(-1px);
+        }
+        
+        .iotawatt-global-duet-btn#id#.active {
+            background: #4a9eff;
+            color: white;
+            box-shadow: 0 2px 6px rgba(74, 158, 255, 0.4);
+        }
+        
+        /* Duet styles for Wh */
+        .iotawatt-duet-content#id# {
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            line-height: 1.1;
+            margin-top: 1px;
+        }
+        
+        .iotawatt-duet-period#id# {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            line-height: 1.1;
+        }
+        
+        .iotawatt-duet-percent#id# {
+            font-size: 10px;
+            font-weight: 600;
+            line-height: 1.1;
+        }
+        
+        .iotawatt-tendance#id# {
+            display: inline-block;
+            margin-left: 2px;
+            vertical-align: middle;
+            line-height: 1;
+        }
+
+        /* Stats indicators */
+        .iotawatt-stat-indicator#id# {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .iotawatt-stat-good#id# {
+            background: rgba(76, 175, 80, 0.15);
+            color: #4CAF50;
+        }
+
+        .iotawatt-stat-warning#id# {
+            background: rgba(255, 152, 0, 0.15);
+            color: #FF9800;
+        }
+
+        .iotawatt-stat-error#id# {
+            background: rgba(244, 67, 54, 0.15);
+            color: #F44336;
+        }
+
+        /* System info grid */
+        .iotawatt-info-grid#id# {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .iotawatt-info-item#id# {
+            background: rgba(128, 128, 128, 0.1);
+            border-radius: 6px;
+            padding: 10px;
+        }
+
+        [data-theme="core2019_Dark"] .iotawatt-info-item#id# {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        /* Progress bar */
+        .iotawatt-progress#id# {
+            width: 100%;
+            height: 8px;
+            background: rgba(128, 128, 128, 0.2);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+
+        .iotawatt-progress-bar#id# {
+            height: 100%;
+            background: linear-gradient(90deg, #4a9eff 0%, #2196F3 100%);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        /* Connection status */
+        .iotawatt-connected#id# {
+            color: #4CAF50 !important;
+            animation: pulse#id# 2s infinite;
+        }
+
+        .iotawatt-disconnected#id# {
+            color: #F44336 !important;
+        }
+        
+        /* Surcharger le CSS de Jeedom qui force la couleur des icônes cursor */
+        #idConnected#id#.cursor > i.iotawatt-disconnected#id# {
+            color: #F44336 !important;
+        }
+        
+        #idConnected#id#.cursor > i.iotawatt-connected#id# {
+            color: #4CAF50 !important;
+        }
+
+        @keyframes pulse#id# {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .iotawatt-input-values#id# {
+                grid-template-columns: 1fr;
+            }
+            
+            .iotawatt-info-grid#id# {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Statistics comparison styles */
+        .iotawatt-stats-comparison#id# {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 15px;
+            align-items: center;
+            padding: 15px;
+            background: rgba(74, 158, 255, 0.05);
+            border-radius: 8px;
+        }
+        
+        [data-theme="core2019_Dark"] .iotawatt-stats-comparison#id# {
+            background: rgba(74, 158, 255, 0.1);
+        }
+        
+        .iotawatt-stats-item#id# {
+            text-align: center;
+        }
+        
+        .iotawatt-stats-item-label#id# {
+            font-size: 11px;
+            color: var(--txt-color);
+            opacity: 0.8;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        
+        .iotawatt-stats-item-value#id# {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--txt-color);
+        }
+        
+        .iotawatt-stats-item-value#id#.highlight {
+            color: #4a9eff;
+            text-shadow: 0 2px 4px rgba(74, 158, 255, 0.3);
+        }
+        
+        .iotawatt-stats-divider#id# {
+            width: 2px;
+            height: 50px;
+            background: linear-gradient(180deg, transparent, #4a9eff, transparent);
+        }
+        
+        .iotawatt-stats-btn#id#:hover {
+            opacity: 0.85;
+        }
+        
+        .iotawatt-stats-btn#id#.active {
+            background: #4a9eff !important;
+            color: white !important;
+        }
+
+        /* Hide sections by default - show inputs by default */
+        #idPageInfo#id#-content {
+            display: none;
+        }
+        
+        #idPageInputs#id#-content {
+            display: block;
+        }
+    </style>
+
+    <!-- Main Content Container -->
+    <div class="iotawatt-section#id#">
+        
+        <!-- Page: Inputs/Outputs Overview (Default) -->
+        <div id="idPageInputs#id#-content">
+            <!-- Global duet navigation buttons -->
+            <div class="iotawatt-global-duet-nav#id#">
+                <button class="iotawatt-global-duet-btn#id# active" data-period="day">JOUR</button>
+                <button class="iotawatt-global-duet-btn#id#" data-period="month">MOIS</button>
+                <button class="iotawatt-global-duet-btn#id#" data-period="year">ANNÉE</button>
+            </div>
+            
+            <div id="iotawatt-inputs-container#id#">
+                #inputs_html#
+            </div>
+            <div id="iotawatt-outputs-container#id#" style="margin-top: 15px;">
+                #outputs_html#
+            </div>
+        </div>
+
+        <!-- Page: System Information -->
+        <div id="idPageInfo#id#-content">
+            <div class="iotawatt-info-grid#id#">
+                <div class="iotawatt-info-item#id#">
+                    <div class="iotawatt-label#id#">{{Adresse MAC}}</div>
+                    <div class="iotawatt-value#id#" id="idMac#id#">#mac_value#</div>
+                </div>
+                <div class="iotawatt-info-item#id#">
+                    <div class="iotawatt-label#id#">{{Version Firmware}}</div>
+                    <div class="iotawatt-value#id#" id="idFirmware#id#">#firmwareVersion_value#</div>
+                </div>
+                <div class="iotawatt-info-item#id#">
+                    <div class="iotawatt-label#id#">{{SSID Wi-Fi}}</div>
+                    <div class="iotawatt-value#id#" id="idSSID#id#">#SSID_value#</div>
+                </div>
+                <div class="iotawatt-info-item#id#">
+                    <div class="iotawatt-label#id#">{{RSSI}}</div>
+                    <div class="iotawatt-value#id#" id="idRSSI#id#">#RSSI_display#</div>
+                </div>
+                <div class="iotawatt-info-item#id#">
+                    <div class="iotawatt-label#id#">{{Nombre d'entrées}}</div>
+                    <div class="iotawatt-value#id#" id="idNbInputs#id#">#nbInputs_value#</div>
+                </div>
+                <div class="iotawatt-info-item#id#">
+                    <div class="iotawatt-label#id#">{{Nombre de sorties}}</div>
+                    <div class="iotawatt-value#id#" id="idNbOutputs#id#">#nbOutputs_value#</div>
+                </div>
+                <div class="iotawatt-info-item#id#">
+                    <div class="iotawatt-label#id#">{{Temps de fonctionnement}}</div>
+                    <div class="iotawatt-value#id#" id="idUptime#id#">#uptime_display#</div>
+                </div>
+                <div class="iotawatt-info-item#id#">
+                    <div class="iotawatt-label#id#">{{Date de démarrage}}</div>
+                    <div class="iotawatt-value#id#" id="idStartTime#id#">#startTime_value#</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+  #divGraphInfo#
+</div>
+
+<script>
+(function() {
+    'use strict';
+    
+    const eqId = '#id#';
+    const eqLogic_id = '#id#';
+    const eqLogic_uid = '#uid#';
+    const perfStart = performance.now();
+    
+    //console.log('[IoTaWatt ' + eqId + '] Template JavaScript loading...');
+    
+    // Ensure jeedom.cmd.addUpdateFunction exists
+    if (typeof jeedom !== 'undefined' && jeedom.cmd && typeof jeedom.cmd.addUpdateFunction !== 'function') {
+        jeedom.cmd.addUpdateFunction = function(id, func) {
+            if (!jeedom.cmd.update) jeedom.cmd.update = {};
+            jeedom.cmd.update[id] = func;
+        };
+    }
+
+    // Page navigation - Toggle entre Inputs et Info
+    var currentPage = 'inputs';
+    
+    function togglePage() {
+        var inputsPage = document.querySelector('#idPageInputs' + eqId + '-content');
+        var infoPage = document.querySelector('#idPageInfo' + eqId + '-content');
+        var toggleBtn = document.querySelector('#idTogglePage' + eqId);
+        
+        if (currentPage === 'inputs') {
+            // Basculer vers Info
+            inputsPage.style.display = 'none';
+            infoPage.style.display = 'block';
+            toggleBtn.querySelector('i').className = 'fas fa-info-circle';
+            toggleBtn.title = '{{Entrées}}';
+            currentPage = 'info';
+            //console.log('[IoTaWatt ' + eqId + '] Switched to Info page');
+        } else {
+            // Basculer vers Inputs
+            infoPage.style.display = 'none';
+            inputsPage.style.display = 'block';
+            toggleBtn.querySelector('i').className = 'fas fa-plug';
+            toggleBtn.title = '{{Informations système}}';
+            currentPage = 'inputs';
+            //console.log('[IoTaWatt ' + eqId + '] Switched to Inputs page');
+        }
+    }
+
+    // Toggle page handler
+    var btnToggle = document.querySelector('#idTogglePage' + eqId);
+    if (btnToggle) {
+        btnToggle.addEventListener('click', function() {
+            togglePage();
+        });
+    }
+    
+    // Modales handlers
+    var btnGraph = document.querySelector('#idOpenGraph' + eqId);
+    var btnPower = document.querySelector('#idOpenPower' + eqId);
+    
+    if (btnGraph) {
+        btnGraph.addEventListener('click', function() {
+            //console.log('[IoTaWatt ' + eqId + '] Opening graph modal');
+            jeeDialog.dialog({
+                id: 'jee_modal',
+                title: '{{Graphiques de consommation}}',
+                contentUrl: 'index.php?v=d&plugin=iotawatt&modal=chart&days=7',
+                width: 1200,
+                height: 800
+            });
+        });
+    }
+    
+    if (btnPower) {
+        btnPower.addEventListener('click', function() {
+            //console.log('[IoTaWatt ' + eqId + '] Opening power modal');
+            jeeDialog.dialog({
+                id: 'jee_modal',
+                title: '{{Puissances IotaWatt}}',
+                contentUrl: 'index.php?v=d&plugin=iotawatt&modal=power'
+            });
+        });
+    }
+
+    // Refresh command
+    var refreshCmdId = '#cmd_refresh_id#';
+    if (domUtils.issetWidgetOptParam(refreshCmdId, 'cmd_refresh_id')) {
+        var refreshBtn = document.querySelector('[data-eqLogic_id="' + eqLogic_id + '"] .cmd[data-cmd_id="' + refreshCmdId + '"]');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', function() {
+                jeedom.cmd.execute({ id: refreshCmdId });
+            });
+        }
+    }
+    
+    // Global duet period navigation - affects ALL cards
+    var globalDuetButtons = document.querySelectorAll('[data-eqLogic_id="' + eqLogic_id + '"] .iotawatt-global-duet-btn' + eqId);
+    for (var i = 0; i < globalDuetButtons.length; i++) {
+        globalDuetButtons[i].addEventListener('click', function() {
+            var period = this.getAttribute('data-period');
+            //console.log('[IoTaWatt ' + eqId + '] Switching all cards to period: ' + period);
+            
+            // Update button states
+            var allGlobalButtons = document.querySelectorAll('[data-eqLogic_id="' + eqLogic_id + '"] .iotawatt-global-duet-btn' + eqId);
+            for (var j = 0; j < allGlobalButtons.length; j++) {
+                allGlobalButtons[j].classList.remove('active');
+            }
+            this.classList.add('active');
+            
+            // Show/hide all period divs in all cards
+            var allPeriods = document.querySelectorAll('[data-eqLogic_id="' + eqLogic_id + '"] .iotawatt-duet-period' + eqId);
+            for (var j = 0; j < allPeriods.length; j++) {
+                if (allPeriods[j].getAttribute('data-period') === period) {
+                    allPeriods[j].style.display = 'flex';
+                    
+                    // Charger les données à la demande si nécessaire
+                    if ((period === 'month' || period === 'year') && allPeriods[j].querySelector('.fa-spinner')) {
+                        loadPeriodData(allPeriods[j], period);
+                    }
+                } else {
+                    allPeriods[j].style.display = 'none';
+                }
+            }
+        });
+    }
+    
+    // Fonction pour charger les données d'une période à la demande
+    function loadPeriodData(periodDiv, period) {
+        var cmdId = periodDiv.getAttribute('data-cmd-id');
+        if (!cmdId || !cmdId.match(/^\d+$/)) {
+            console.warn('[IoTaWatt ' + eqId + '] Invalid cmdId: ' + cmdId);
+            return;
+        }
+        
+        //console.log('[IoTaWatt ' + eqId + '] Loading ' + period + ' data for cmd #' + cmdId + '...');
+        
+        var numberSpan = periodDiv.querySelector('.iotawatt-main-number' + eqId);
+        var percentSpan = periodDiv.querySelector('.iotawatt-duet-percent' + eqId);
+        
+        if (!numberSpan || !percentSpan) {
+            console.warn('[IoTaWatt ' + eqId + '] Spans not found for period ' + period);
+            return;
+        }
+        
+        // Appel AJAX pour récupérer les données via l'API Jeedom
+        // global: false pour ne pas afficher le spinner de chargement qui bloque la page
+        domUtils.ajax({
+            type: 'POST',
+            url: 'plugins/iotawatt/core/ajax/iotawatt.ajax.php',
+            data: {
+                action: 'getStatsPeriod',
+                cmdId: cmdId,
+                period: period
+            },
+            dataType: 'json',
+            global: false,
+            success: function(data) {
+                if (data.state != 'ok') {
+                    console.error('[IoTaWatt ' + eqId + '] Error loading ' + period + ' data:', data.result);
+                    numberSpan.innerHTML = '--- <span class="unit' + eqId + '">' + (data.result && data.result.unit || 'kWh') + '</span>';
+                    percentSpan.textContent = '---';
+                    percentSpan.style.color = 'var(--txt-color)';
+                    return;
+                }
+                
+                var result = data.result;
+                //console.log('[IoTaWatt ' + eqId + '] ' + period + ' data loaded:', result);
+                
+                // Mettre à jour l'affichage
+                numberSpan.innerHTML = result.currentValue + ' <span class="unit' + eqId + '">' + result.unit + '</span>';
+                numberSpan.title = result.previousLabel + ' : ' + result.previousValue + ' ' + result.unit + '<br>' + 
+                                   result.currentLabel + ' : ' + result.currentValue + ' ' + result.unit;
+                
+                percentSpan.textContent = result.arrow + ' ' + result.percent + '%';
+                percentSpan.style.color = result.color;
+                percentSpan.title = result.previousLabel + ' : ' + result.previousValue + ' ' + result.unit + '<br>' + 
+                                    result.currentLabel + ' : ' + result.currentValue + ' ' + result.unit;
+            },
+            error: function(xhr, status, error) {
+                console.error('[IoTaWatt ' + eqId + '] AJAX error loading ' + period + ' data:', error);
+                numberSpan.innerHTML = 'Erreur <span class="unit' + eqId + '">kWh</span>';
+                percentSpan.textContent = '---';
+                percentSpan.style.color = '#F44336';
+            }
+        });
+    }
+
+    // Format elapsed time
+    function formatElapsedTime(diffMinutes) {
+        if (diffMinutes < 1) {
+            return '< 1 min';
+        } else if (diffMinutes < 60) {
+            return Math.round(diffMinutes) + ' min';
+        } else if (diffMinutes < 1440) {
+            var hours = Math.floor(diffMinutes / 60);
+            var mins = Math.round(diffMinutes % 60);
+            return hours + 'h' + (mins > 0 ? mins : '');
+        } else {
+            var days = Math.floor(diffMinutes / 1440);
+            var hours = Math.floor((diffMinutes % 1440) / 60);
+            return days + 'j' + (hours > 0 ? ' ' + hours + 'h' : '');
+        }
+    }
+
+    // Update connection status
+    function updateConnectionStatus(collectDate) {
+        var connected = document.querySelector('#idConnected' + eqId);
+        if (!connected) return;
+        
+        var lastUpdateStr = collectDate || '#cmd_input_0_Volts_collectDate#';
+        if (domUtils.issetWidgetOptParam(lastUpdateStr, 'cmd_input_0_Volts_collectDate')) {
+            var lastUpdate = new Date(lastUpdateStr);
+            var now = new Date();
+            var diffMinutes = (now - lastUpdate) / 1000 / 60;
+            var elapsedTime = formatElapsedTime(diffMinutes);
+            
+            if (diffMinutes < 5) {
+                connected.innerHTML = '<i class="fas fa-heartbeat iotawatt-connected' + eqId + '"></i>';
+                connected.title = '{{Connecté}}<br>{{Dernière mise à jour :}} ' + elapsedTime;
+            } else {
+                connected.innerHTML = '<i class="fas fa-skull iotawatt-disconnected' + eqId + '"></i>';
+                connected.title = '{{Déconnecté}}<br>{{Dernière mise à jour :}} ' + elapsedTime;
+            }
+        } else {
+            connected.innerHTML = '<i class="fas fa-skull iotawatt-disconnected' + eqId + '"></i>';
+            connected.title = '{{Déconnecté}}<br>{{Aucune donnée disponible}}';
+        }
+    }
+
+
+
+    // Setup update functions for real-time updates
+    function setupUpdateFunctions() {
+        if (typeof jeedom === 'undefined' || !jeedom.cmd) {
+            console.warn('[IoTaWatt ' + eqId + '] Jeedom API not available for updates');
+            return;
+        }
+        
+        //console.log('[IoTaWatt ' + eqId + '] Setting up real-time update functions');
+        
+        // Register update function for Volts command to track connection status
+        var voltsCmd = '#cmd_input_0_Volts_id#';
+        if (domUtils.issetWidgetOptParam(voltsCmd, 'cmd_input_0_Volts_id')) {
+            jeedom.cmd.addUpdateFunction(voltsCmd, function(_options) {
+                // Update connection status when Volts command updates
+                if (_options.collectDate) {
+                    updateConnectionStatus(_options.collectDate);
+                }
+            });
+            // Force initial refresh
+            jeedom.cmd.refreshValue([{cmd_id: voltsCmd}]);
+        }
+        
+        // Register update function for each command value element
+        var cmdElements = document.querySelectorAll('[data-eqLogic_uid="' + eqLogic_uid + '"] .cmd[data-cmd_id]');
+        for (var i = 0; i < cmdElements.length; i++) {
+            (function(element) {
+                var cmdId = element.getAttribute('data-cmd_id');
+                if (domUtils.issetWidgetOptParam(cmdId, 'cmd_id')) {
+                    // Skip elements inside duet-period divs (historical calculated values)
+                    var isDuetPeriod = false;
+                    var parent = element.parentElement;
+                    while (parent) {
+                        if (parent.classList && parent.classList.contains('iotawatt-duet-period' + eqId)) {
+                            isDuetPeriod = true;
+                            break;
+                        }
+                        parent = parent.parentElement;
+                    }
+                    
+                    if (isDuetPeriod) {
+                        // Don't update historical calculated values
+                        return;
+                    }
+                    
+                    jeedom.cmd.addUpdateFunction(cmdId, function(_options) {
+                        // Update the element's text content
+                        var value = _options.display_value || '';
+                        if (element.classList.contains('history')) {
+                            // For history elements, preserve the unit
+                            var unit = element.querySelector('.unit' + eqId);
+                            var unitText = unit ? unit.textContent : '';
+                            var tendanceSpan = element.querySelector('.iotawatt-tendance' + eqId);
+                            var tendanceHTML = tendanceSpan ? tendanceSpan.outerHTML : '';
+                            element.innerHTML = value + (unitText ? ' <span class="unit' + eqId + '">' + unitText + '</span> ' : '') + tendanceHTML;
+                        } else {
+                            element.textContent = value;
+                        }
+                        
+                        // Update tooltip if present
+                        if (_options.collectDate && _options.valueDate) {
+                            element.title = '{{Date de collecte :}} ' + _options.collectDate + '<br>{{Date de valeur :}} ' + _options.valueDate;
+                        }
+                        
+                        // Update tendance for Watts commands
+                        updateTendanceForCmd(cmdId);
+                    });
+                }
+            })(cmdElements[i]);
+        }
+        
+        // Function to update tendance icon
+        function updateTendanceForCmd(cmdId) {
+            if (typeof jeedom === 'undefined' || !jeedom.cmd) return;
+            
+            var tendanceSpan = document.querySelector('.iotawatt-tendance' + eqId + '[data-cmd_id="' + cmdId + '"]');
+            if (!tendanceSpan) return;
+            
+            // Get command info to calculate tendance
+            jeedom.cmd.execute({
+                id: cmdId,
+                cache: 0,
+                success: function(currentValue) {
+                    // Note: In real implementation, we'd need to fetch history and calculate
+                    // For now, we'll use a simple heuristic based on value changes
+                    // This should be enhanced with proper getTendance API call
+                }
+            });
+        }
+    }
+
+    // Initialize on load
+    setTimeout(function() {
+        var initStart = performance.now();
+        //console.log('[IoTaWatt ' + eqId + '] Initializing...');
+        updateConnectionStatus();
+        setupUpdateFunctions();
+        
+        // Charger automatiquement les données JOUR après l'affichage
+        setTimeout(function() {
+            //console.log('[IoTaWatt ' + eqId + '] Auto-loading DAY period data...');
+            var dayPeriods = document.querySelectorAll('[data-eqLogic_id="' + eqLogic_id + '"] .iotawatt-duet-period' + eqId + '[data-period="day"]');
+            for (var i = 0; i < dayPeriods.length; i++) {
+                if (dayPeriods[i].querySelector('.fa-spinner')) {
+                    loadPeriodData(dayPeriods[i], 'day');
+                }
+            }
+        }, 500);
+        
+        var initTime = (performance.now() - initStart).toFixed(2);
+        var totalTime = (performance.now() - perfStart).toFixed(2);
+        //console.log('[IoTaWatt ' + eqId + '] Initialization completed in ' + initTime + 'ms (total: ' + totalTime + 'ms)');
+    }, 100);
+
+    // Update elapsed time display every 60 seconds (data comes from Jeedom events)
+    setInterval(function() {
+        // Just refresh the display with existing data to update "depuis xx min"
+        updateConnectionStatus();
+    }, 60000);
+
+})();
+</script>

@@ -99,7 +99,3 @@ function arrayDiffRecursive(array $firstArray,array  $secondArray, bool $reverse
     ?>
   </div>
 </div>
-
-<script>
-
-</script>
