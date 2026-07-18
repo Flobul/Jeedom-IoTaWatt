@@ -334,27 +334,21 @@ IotawattPowerModal = {
                     cmdIds = historyElem.getAttribute('data-cmd_id');
                 }
                 
-                $('#md_modal2').dialog({title: '{{Historique}}'})
-                    .load(`index.php?v=d&modal=cmd.history&id=${cmdIds}`)
-                    .dialog('open');
+	                jeeDialog.dialog({id: 'md_modal2', title: '{{Historique}}', contentUrl: `index.php?v=d&modal=cmd.history&id=${encodeURIComponent(cmdIds)}`});
                 return;
             }
 
             // Configuration commande
             const cmdAction = event.target.closest(this.config.selectors.cmdAction);
             if (cmdAction) {
-                $('#md_modal2').dialog({title: '{{Configuration de la commande}}'})
-                    .load(`index.php?v=d&modal=cmd.configure&cmd_id=${cmdAction.getAttribute('data-cmd_id')}`)
-                    .dialog('open');
+	                jeeDialog.dialog({id: 'md_modal2', title: '{{Configuration de la commande}}', contentUrl: `index.php?v=d&modal=cmd.configure&cmd_id=${encodeURIComponent(cmdAction.getAttribute('data-cmd_id'))}`});
                 return;
             }
 
             // Configuration équipement
             const eqLogicAction = event.target.closest(this.config.selectors.eqLogicAction);
             if (eqLogicAction) {
-                $('#md_modal2').dialog({title: '{{Configuration de l\'équipement}}'})
-                    .load(`index.php?v=d&modal=eqLogic.configure&eqLogic_id=${eqLogicAction.getAttribute('data-id')}`)
-                    .dialog('open');
+	                jeeDialog.dialog({id: 'md_modal2', title: '{{Configuration de l\'équipement}}', contentUrl: `index.php?v=d&modal=eqLogic.configure&eqLogic_id=${encodeURIComponent(eqLogicAction.getAttribute('data-id'))}`});
                 return;
             }
         });

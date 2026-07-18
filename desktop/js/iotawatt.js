@@ -39,7 +39,6 @@ function printEqlogic() {
 document.getElementById('table_cmd').addEventListener('click', function(event) {
   if (_target = event.target.closest('.cmdAction[data-action="reloadHistory"]')) {
     var id = event.target.closest('tr').getAttribute('data-cmd_id');
-    console.log(id)
     var message = '{{Êtes-vous sûr de vouloir supprimer l\'historique de la commande et de le remplacer par celui de IoTaWatt ? Cette action est irréversible.}}</br></br>';
     const now = new Date();
 
@@ -56,21 +55,20 @@ document.getElementById('table_cmd').addEventListener('click', function(event) {
     message +=     '</div>';
     message += '</div>';
 
-    message += '<script>';
-    message += '    jeedomUtils.datePickerInit("Y-m-d H:i:00");';
-    message += '</script>';
-    bootbox.dialog({
-        title: '{{Remplacer l\'historique de la commande}}',
-        message: message,
-        buttons: {
-            "{{Annuler}}": {
-              className: "btn-danger",
-              callback: function() {}
-            },
-            success: {
-                label: "{{Recharger}}",
-                className: "btn-success",
-                callback: function() {
+	    jeeDialog.dialog({
+	        id: 'iotawattReloadHistory',
+	        title: '{{Remplacer l\'historique de la commande}}',
+	        message: message,
+	        buttons: {
+	            cancel: {
+	              label: '{{Annuler}}',
+	              className: 'danger',
+	              callback: {click: function() { jeeDialog.get('#iotawattReloadHistory')?.close(); }}
+	            },
+	            confirm: {
+	                label: "{{Recharger}}",
+	                className: 'success',
+	                callback: {click: function() {
                     const selectedBtn = document.querySelector('#md_history .btn-success.btnStartDate');
                     const val = selectedBtn?.dataset.value || selectedBtn?.value;
                     switch (val) {
@@ -117,12 +115,13 @@ document.getElementById('table_cmd').addEventListener('click', function(event) {
                             });
                             return;
                         }
-                        if (data.result) {
-                           jeedomUtils.showAlert({
-                                message: '{{Historique remis à jour depuis IoTaWatt.}}',
-                                level: 'success'
-                            });
-                        }
+	                        if (data.result) {
+	                           jeedomUtils.showAlert({
+	                                message: '{{Historique remis à jour depuis IoTaWatt.}}',
+	                                level: 'success'
+	                            });
+	                            jeeDialog.get('#iotawattReloadHistory')?.close();
+	                        }
                     })
                     .catch(function(error) {
                         console.error('Error:', error);
@@ -131,10 +130,11 @@ document.getElementById('table_cmd').addEventListener('click', function(event) {
                             level: 'danger'
                         });
                     });
-                }
-            }
-        }
-    });
+	                }}
+	            }
+	        }
+	    });
+	    jeedomUtils.datePickerInit('Y-m-d H:i:00');
 }
 });
 
