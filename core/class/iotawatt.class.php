@@ -319,24 +319,13 @@ class iotawatt extends eqLogic
      */
     public static function deamon_stop() {
         log::add(__CLASS__, 'info', __('Arrêt du service iotawatt', __FILE__));
-        $cmd = '/iotawattd.php';
-        exec('sudo kill -9 $(ps aux | grep "'.$cmd.'" | awk \'{print $2}\')');
-        sleep(1);
-        exec('sudo kill -9 $(ps aux | grep "'.$cmd.'" | awk \'{print $2}\')');
-        sleep(1);
-        $deamon_info = self::deamon_info();
-        if ($deamon_info['state'] == 'ok') {
-            exec('sudo kill -9 $(ps aux | grep "'.$cmd.'" | awk \'{print $2}\')');
-            sleep(1);
-        } else {
-            return true;
+        foreach (system::ps('iotawattd.php') as $process) {
+            if (isset($process['pid']) && is_numeric($process['pid'])) {
+                system::kill((int) $process['pid']);
+            }
         }
-        $deamon_info = self::deamon_info();
-        if ($deamon_info['state'] == 'ok') {
-            exec('sudo kill -9 $(ps aux | grep "'.$cmd.'" | awk \'{print $2}\')');
-            sleep(1);
-            return true;
-        }
+        sleep(1);
+        return self::deamon_info()['state'] !== 'ok';
     }
 
     /**
@@ -611,7 +600,6 @@ class iotawatt extends eqLogic
             $this->setStatus('connecttime', $_status['wifi']['connecttime']);
         }
         if (isset($_status['passwords'])) {
-            log::add(__CLASS__, 'debug', __FUNCTION__ . ' ' . __('début', __FILE__) . ' passwords=' . json_encode($_status['passwords']));
             $this->setConfiguration('admin', $_status['passwords']['admin']);
             $this->setConfiguration('user', $_status['passwords']['user']);
             $this->setConfiguration('localAccess', $_status['passwords']['localAccess']);

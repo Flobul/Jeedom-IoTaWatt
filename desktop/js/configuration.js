@@ -23,7 +23,6 @@ function addCondition(_expression, _idElementLinky) {
         success: function (data) {
             var html = data.isHistorized ? '<span class="label label-success">{{Commande historisée}}</span>' : '<span class="label label-danger">{{Commande non historisée}}</span>';
             document.getElementById(_idElementLinky).innerHTML = html;
-            console.log(data);
         }
     });
 }
